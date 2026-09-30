@@ -1,24 +1,11 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
+import "@fontsource-variable/cormorant-garamond/wght.css";
+import "@fontsource-variable/source-sans-3/wght.css";
 import { BackToTop } from "@/components/layout/BackToTop";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { site } from "@/lib/site";
 import "./globals.css";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-cormorant",
-  display: "swap",
-});
-
-const sourceSans = Source_Sans_3({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-source",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -34,10 +21,7 @@ export const viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en-IE"
-      className={`${cormorant.variable} ${sourceSans.variable} h-full antialiased`}
-    >
+    <html lang="en-IE" className="h-full antialiased">
       <body className="flex min-h-full flex-col bg-ink font-sans text-cream">
         <a
           href="#main-content"

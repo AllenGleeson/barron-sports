@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-cormorant: "Cormorant Garamond Variable";
+  --font-source: "Source Sans 3 Variable";
   --ink: #1e271c;
   --forest: #162015;
   --moss: #283424;

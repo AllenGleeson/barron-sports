@@ -25,8 +25,8 @@ export function Logo({ className = "", priority = false, compact = false }: Logo
         <Image
           src={assetPath("/logo.png")}
           alt=""
-        width={656}
-        height={201}
+          width={656}
+          height={201}
           priority={priority}
           className="h-full w-auto object-contain"
           style={{ width: "auto", height: "100%" }}

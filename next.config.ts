@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
-const pagesBasePath = process.env.PAGES_BASE_PATH ?? "";
+function sanitizeBasePath(raw: string | undefined) {
+  const value = (raw ?? "").trim();
+  if (!value || value === "/") return "";
+  const withSlash = value.startsWith("/") ? value : `/${value}`;
+  return withSlash.replace(/\/+$/, "");
+}
+
+const pagesBasePath = sanitizeBasePath(process.env.PAGES_BASE_PATH);
 
 const nextConfig: NextConfig = {
   output: "export",
