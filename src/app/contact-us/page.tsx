@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { CoverImage } from "@/components/media/CoverImage";
 import { PageHero } from "@/components/interior/PageHero";
 import { Container } from "@/components/ui/Container";
 import { site } from "@/lib/site";
+
+const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address.full)}`;
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -54,6 +57,18 @@ export default function ContactPage() {
                 </li>
               ))}
             </ul>
+            <a
+              href={mapsHref}
+              target="_blank"
+              rel="noreferrer"
+              className="relative mt-6 block aspect-[16/9] overflow-hidden border border-line"
+            >
+              <CoverImage
+                src="/contact/contact-map-placeholder.jpg"
+                alt="Map of Barron Sports in Newpark, Ennis, Co. Clare"
+                sizes="(min-width: 1024px) 40vw, 100vw"
+              />
+            </a>
           </div>
           <div>
             <h2 className="mb-4 font-display text-3xl text-cream">Send a message</h2>

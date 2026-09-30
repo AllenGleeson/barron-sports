@@ -20,7 +20,7 @@ export function Hero() {
         aria-hidden="true"
       />
 
-      <Container className="relative flex min-h-[56vh] items-end pb-10 pt-12 sm:items-center sm:pb-12 sm:pt-14">
+      <Container className="relative flex min-h-[56vh] items-end pt-4 sm:items-center sm:pt-6">
         <div className="max-w-2xl">
           <p className="flex items-center gap-3 text-[11px] uppercase tracking-[0.36em] text-brass">
             <span className="inline-block h-px w-8 bg-brass" aria-hidden="true" />

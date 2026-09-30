@@ -52,6 +52,13 @@ body {
   outline-offset: 3px;
 }
 
+.subject-search::-webkit-search-cancel-button,
+.subject-search::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 @keyframes offers-marquee {
   from {
     transform: translate3d(0, 0, 0);

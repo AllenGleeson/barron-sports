@@ -15,6 +15,7 @@ export default function BrandsPage() {
   return (
     <>
       <PageHero
+        compact
         eyebrow="The makers"
         title="Brands We Work With"
         description="We stock brands we are prepared to recommend. If a name is not listed, ask — we can often source it."
@@ -23,7 +24,7 @@ export default function BrandsPage() {
           alt: "Sun through a mature woodland canopy",
         }}
       />
-      <section className="bg-ink py-16 lg:py-24">
+      <section className="bg-ink py-8 lg:py-10">
         <Container>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {brands.map((brand) => (
@@ -32,7 +33,7 @@ export default function BrandsPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-12">
+          <div className="mt-8">
             <Button href="/contact-us" variant="ghost">
               Ask about a brand
             </Button>

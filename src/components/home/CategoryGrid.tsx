@@ -4,7 +4,7 @@ import { categories } from "@/lib/site";
 
 export function CategoryGrid() {
   return (
-    <section className="bg-ink pb-8 pt-6 lg:pb-10 lg:pt-8" aria-labelledby="categories-heading">
+    <section className="bg-ink pb-8 pt-2 lg:pb-10 lg:pt-3" aria-labelledby="categories-heading">
       <Container>
         <h2
           id="categories-heading"

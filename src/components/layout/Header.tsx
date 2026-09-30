@@ -144,7 +144,7 @@ export function Header() {
                 >
                   <button
                     type="button"
-                    className={`flex items-center gap-1.5 px-2 py-2 text-[11px] uppercase tracking-[0.14em] transition-colors xl:px-3 xl:text-[12px] xl:tracking-[0.16em] ${
+                    className={`flex items-center gap-1.5 px-2 py-2 text-[12px] uppercase tracking-[0.14em] transition-colors xl:px-3 xl:text-[13px] xl:tracking-[0.16em] ${
                       pathname.startsWith("/products1") || productsOpen
                         ? "text-brass hover:text-cream/85"
                         : "text-cream/85 hover:text-brass"
@@ -165,7 +165,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-2 py-2 text-[11px] uppercase tracking-[0.14em] transition-colors xl:px-3 xl:text-[12px] xl:tracking-[0.16em] ${
+                className={`px-2 py-2 text-[12px] uppercase tracking-[0.14em] transition-colors xl:px-3 xl:text-[13px] xl:tracking-[0.16em] ${
                   item.prominent || isActive(item.href)
                     ? "text-brass hover:text-cream/85"
                     : "text-cream/85 hover:text-brass"
