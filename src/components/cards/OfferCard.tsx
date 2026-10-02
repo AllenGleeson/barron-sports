@@ -5,7 +5,7 @@ import { offerHref, type SpecialOffer } from "@/lib/site";
 export function OfferCard({ offer }: { offer: SpecialOffer }) {
   return (
     <article className="group flex h-full flex-col border border-line bg-moss">
-      <div className="relative aspect-[4/3] overflow-hidden bg-panel p-4">
+      <div className="relative aspect-[4/3] overflow-hidden bg-white p-4">
         <CoverImage
           src={offer.image}
           alt={offer.title}

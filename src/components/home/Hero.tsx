@@ -34,7 +34,7 @@ export function Hero() {
             specialist products from trusted brands.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href="/products1/accessories">Explore Products</Button>
+            <Button href="/products">Explore Products</Button>
             <Button href="/special-offers" variant="secondary">
               Special Offers
             </Button>

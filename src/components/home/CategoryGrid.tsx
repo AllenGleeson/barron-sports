@@ -1,4 +1,5 @@
 import { FeaturedCollectionCard } from "@/components/cards/FeaturedCollectionCard";
+import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { categories } from "@/lib/site";
 
@@ -16,6 +17,11 @@ export function CategoryGrid() {
           {categories.map((category) => (
             <FeaturedCollectionCard key={category.slug} collection={category} />
           ))}
+        </div>
+        <div className="mt-6 flex justify-center lg:mt-8">
+          <Button href="/products" variant="ghost">
+            View All Products
+          </Button>
         </div>
       </Container>
     </section>

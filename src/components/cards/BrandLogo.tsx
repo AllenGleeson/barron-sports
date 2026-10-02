@@ -1,15 +1,23 @@
 import Image from "next/image";
 import type { Brand } from "@/lib/site";
 
-export function BrandLogo({ brand }: { brand: Brand }) {
+export function BrandLogo({
+  brand,
+  loading = "lazy",
+}: {
+  brand: Brand;
+  loading?: "eager" | "lazy";
+}) {
   return (
-    <figure className="flex h-full min-h-[7.25rem] flex-col items-center justify-center gap-3 bg-cream/70 px-4 py-5">
+    <figure className="flex h-full min-h-[7.25rem] cursor-default select-none flex-col items-center justify-center gap-3 bg-white px-4 py-5">
       <span className="relative flex h-12 w-full items-center justify-center sm:h-14">
         <Image
           src={brand.logo}
           alt=""
           fill
           sizes="180px"
+          loading={loading}
+          draggable={false}
           className="object-contain"
         />
       </span>

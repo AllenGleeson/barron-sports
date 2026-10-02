@@ -47,9 +47,9 @@ body {
   color: var(--ink);
 }
 
-:focus-visible {
-  outline: 2px solid var(--brass);
-  outline-offset: 3px;
+.site-header:has([data-products]:hover),
+.site-header:has([data-products]:focus-within) {
+  transform: none !important;
 }
 
 .subject-search::-webkit-search-cancel-button,
@@ -76,11 +76,23 @@ body {
   animation-play-state: paused;
 }
 
-.brands-marquee-track {
-  animation: offers-marquee 140s linear infinite;
+.brands-marquee {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
-.brands-marquee-track:hover {
+.brands-marquee-track {
+  animation: offers-marquee 140s linear infinite;
+  backface-visibility: hidden;
+}
+
+.brands-marquee-track-reverse {
+  animation: offers-marquee 140s linear infinite reverse;
+  backface-visibility: hidden;
+}
+
+.brands-marquee-row:hover .brands-marquee-track,
+.brands-marquee-row:hover .brands-marquee-track-reverse {
   animation-play-state: paused;
 }
 

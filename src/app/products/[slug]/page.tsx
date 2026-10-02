@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { ProductCardList } from "@/components/cards/ProductCard";
 import { PageHero } from "@/components/interior/PageHero";
+import { ProductSearch } from "@/components/products/ProductSearch";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { categories, categoryProducts, getCategory, site } from "@/lib/site";
+import {
+  categories,
+  categoryProducts,
+  getCategory,
+  MIN_PRODUCTS_FOR_SEARCH,
+  site,
+} from "@/lib/site";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -32,6 +39,7 @@ export default async function CategoryPage({ params }: PageProps) {
   if (!category) notFound();
 
   const products = categoryProducts[category.slug] ?? [];
+  const showSearch = products.length >= MIN_PRODUCTS_FOR_SEARCH;
 
   return (
     <>
@@ -41,30 +49,14 @@ export default async function CategoryPage({ params }: PageProps) {
         description={category.description}
         image={category.image}
       />
-      <section className="bg-ink py-16 lg:py-24">
+      <section className="bg-ink py-8 lg:py-10">
         <Container>
           {products.length > 0 ? (
-            <ul className="grid gap-4 md:grid-cols-2">
-              {products.map((product) => (
-                <li key={product.name} className="border border-line bg-moss p-7">
-                  <h2 className="font-display text-2xl text-cream">{product.name}</h2>
-                  <p className="mt-3 text-sm leading-relaxed text-parchment">
-                    {product.summary}
-                  </p>
-                  {product.price ? (
-                    <p className="mt-5 text-brass">{product.price}</p>
-                  ) : null}
-                  {product.href ? (
-                    <Link
-                      href={product.href}
-                      className="mt-5 inline-block text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
-                    >
-                      View offer →
-                    </Link>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            showSearch ? (
+              <ProductSearch products={products} />
+            ) : (
+              <ProductCardList products={products} />
+            )
           ) : (
             <p className="max-w-xl text-parchment">
               Current stock changes regularly. Call or visit the shop in Ennis

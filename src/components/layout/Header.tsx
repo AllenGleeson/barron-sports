@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
@@ -14,6 +15,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
+  const [menuMounted, setMenuMounted] = useState(false);
   const [navPath, setNavPath] = useState(pathname);
   const closeTimer = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -33,18 +35,27 @@ export function Header() {
     const header = headerRef.current;
     lastScrollY.current = window.scrollY;
 
+    const syncMenuTop = () => {
+      if (!header) return;
+      const bottom = `${header.getBoundingClientRect().bottom}px`;
+      header.style.setProperty("--header-bottom", bottom);
+      document.documentElement.style.setProperty("--header-bottom", bottom);
+    };
+
     const setHide = (next: number) => {
       hideOffset.current = next;
-      if (header) {
-        header.style.transform = `translate3d(0, ${-next}px, 0)`;
-      }
+      if (!header) return;
+      header.style.transform = next > 0 ? `translate3d(0, ${-next}px, 0)` : "";
+      syncMenuTop();
     };
 
     setHide(0);
+    syncMenuTop();
 
     const onScroll = () => {
       const currentY = window.scrollY;
       setScrolled(currentY > 12);
+      syncMenuTop();
 
       const height = header?.offsetHeight ?? 180;
       const delta = currentY - lastScrollY.current;
@@ -60,8 +71,16 @@ export function Header() {
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", syncMenuTop);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", syncMenuTop);
+    };
   }, [mobileOpen, pathname, productsOpen]);
+
+  useEffect(() => {
+    setMenuMounted(true);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -100,7 +119,7 @@ export function Header() {
 
   const delayCloseProducts = () => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(() => setProductsOpen(false), 140);
+    closeTimer.current = window.setTimeout(() => setProductsOpen(false), 200);
   };
 
   const isActive = (href: string) => {
@@ -109,9 +128,10 @@ export function Header() {
   };
 
   return (
+    <>
     <header
       ref={headerRef}
-      className={`sticky top-0 z-50 border-b will-change-transform transition-[color,background-color,border-color] duration-300 ${
+      className={`site-header sticky top-0 z-[100] overflow-visible border-b transition-[color,background-color,border-color] duration-300 ${
         scrolled
           ? "border-line bg-ink/95 backdrop-blur-md"
           : "border-transparent bg-ink"
@@ -138,25 +158,25 @@ export function Header() {
               return (
                 <div
                   key={item.label}
-                  className="relative"
+                  data-products
+                  className="group/products relative flex h-[6.75rem] items-center"
                   onMouseEnter={openProducts}
                   onMouseLeave={delayCloseProducts}
                 >
-                  <button
-                    type="button"
+                  <Link
+                    href={item.href}
                     className={`flex items-center gap-1.5 px-2 py-2 text-[12px] uppercase tracking-[0.14em] transition-colors xl:px-3 xl:text-[13px] xl:tracking-[0.16em] ${
-                      pathname.startsWith("/products1") || productsOpen
+                      pathname.startsWith("/products") || productsOpen
                         ? "text-brass hover:text-cream/85"
                         : "text-cream/85 hover:text-brass"
                     }`}
                     aria-expanded={productsOpen}
                     aria-controls={productsId}
-                    onClick={() => setProductsOpen((open) => !open)}
                     onFocus={openProducts}
                   >
                     {item.label}
                     <Chevron down={productsOpen} />
-                  </button>
+                  </Link>
                 </div>
               );
             }
@@ -206,42 +226,6 @@ export function Header() {
       </Container>
 
       <div
-        id={productsId}
-        onMouseEnter={openProducts}
-        onMouseLeave={delayCloseProducts}
-        className={`absolute inset-x-0 top-full hidden border-b border-line bg-forest/98 shadow-2xl shadow-black/40 backdrop-blur-md lg:block ${
-          productsOpen ? "visible opacity-100" : "invisible pointer-events-none opacity-0"
-        } transition-opacity duration-200`}
-        aria-hidden={!productsOpen}
-        inert={!productsOpen ? true : undefined}
-      >
-        <Container className="grid grid-cols-3 gap-px py-8">
-          {categories.map((category) => (
-            <Link
-              key={category.slug}
-              href={category.href}
-              className="group grid grid-cols-[5.5rem_1fr] gap-4 p-4 transition-colors hover:bg-moss"
-            >
-              <span className="relative block aspect-[4/3] overflow-hidden bg-panel">
-                <CoverImage
-                  src={category.image.src}
-                  alt=""
-                  sizes="220px"
-                  className="transition duration-500 group-hover:scale-105"
-                />
-              </span>
-              <span className="flex flex-col justify-center">
-                <span className="font-display text-xl text-cream group-hover:text-brass">
-                  {category.name}
-                </span>
-                <span className="mt-1 text-sm text-stone">{category.shortDescription}</span>
-              </span>
-            </Link>
-          ))}
-        </Container>
-      </div>
-
-      <div
         id={mobilePanelId}
         className={`lg:hidden ${mobileOpen ? "block" : "hidden"} border-t border-line bg-ink`}
       >
@@ -251,17 +235,33 @@ export function Header() {
               <li key={item.label} className="border-b border-line-soft">
                 {item.children ? (
                   <div>
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between py-4 text-left text-sm uppercase tracking-[0.18em] text-cream"
-                      aria-expanded={mobileProductsOpen}
-                      onClick={() => setMobileProductsOpen((open) => !open)}
-                    >
-                      {item.label}
-                      <Chevron down={mobileProductsOpen} />
-                    </button>
+                    <div className="flex items-center justify-between gap-3 border-b border-line-soft">
+                      <Link
+                        href={item.href}
+                        className="flex-1 py-4 text-sm uppercase tracking-[0.18em] text-cream hover:text-brass"
+                      >
+                        {item.label}
+                      </Link>
+                      <button
+                        type="button"
+                        className="p-4 text-cream"
+                        aria-expanded={mobileProductsOpen}
+                        aria-label={mobileProductsOpen ? "Hide product categories" : "Show product categories"}
+                        onClick={() => setMobileProductsOpen((open) => !open)}
+                      >
+                        <Chevron down={mobileProductsOpen} />
+                      </button>
+                    </div>
                     {mobileProductsOpen ? (
                       <ul className="mb-3 ml-1 border-l border-line pl-4">
+                        <li>
+                          <Link
+                            href={item.href}
+                            className="block py-2.5 text-sm text-parchment hover:text-brass"
+                          >
+                            All Products
+                          </Link>
+                        </li>
                         {item.children.map((child) => (
                           <li key={child.href}>
                             <Link
@@ -296,6 +296,54 @@ export function Header() {
         </nav>
       </div>
     </header>
+      {menuMounted && productsOpen
+        ? createPortal(
+            <div
+              id={productsId}
+              className="fixed inset-x-0 z-[200] border-b border-line bg-forest/98 shadow-2xl shadow-black/40 backdrop-blur-md"
+              style={{ top: "var(--header-bottom, 6.75rem)" }}
+              onMouseEnter={openProducts}
+              onMouseLeave={delayCloseProducts}
+            >
+              <Container className="py-8">
+                <div className="grid grid-cols-3 gap-px">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.slug}
+                      href={category.href}
+                      className="group grid grid-cols-[5.5rem_1fr] gap-4 p-4 transition-colors hover:bg-moss"
+                    >
+                      <span className="relative block aspect-[4/3] overflow-hidden bg-panel">
+                        <CoverImage
+                          src={category.image.src}
+                          alt=""
+                          sizes="220px"
+                          className="transition duration-500 group-hover:scale-105"
+                        />
+                      </span>
+                      <span className="flex flex-col justify-center">
+                        <span className="font-display text-xl text-cream group-hover:text-brass">
+                          {category.name}
+                        </span>
+                        <span className="mt-1 text-sm text-stone">{category.shortDescription}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+                <div className="mt-6 flex justify-center">
+                  <Link
+                    href="/products"
+                    className="inline-flex items-center justify-center border border-brass/40 px-6 py-3 text-[12px] font-medium uppercase tracking-[0.18em] text-brass transition-colors hover:border-brass hover:bg-brass/10"
+                  >
+                    All Products
+                  </Link>
+                </div>
+              </Container>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 

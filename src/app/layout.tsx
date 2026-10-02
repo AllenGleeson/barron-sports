@@ -13,6 +13,10 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description: site.description,
+  icons: {
+    icon: [{ url: "/mini-logo.PNG", type: "image/png" }],
+    apple: "/mini-logo.PNG",
+  },
 };
 
 export const viewport = {

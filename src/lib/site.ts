@@ -35,36 +35,36 @@ export const primaryNav: NavItem[] = [
   { label: "Home", href: "/" },
   {
     label: "Products",
-    href: "/products1/accessories",
+    href: "/products",
     children: [
       {
         label: "Accessories",
-        href: "/products1/accessories",
+        href: "/products/accessories",
         description: "Sights, mounts, traps and field equipment",
       },
       {
         label: "DogTrace",
-        href: "/products1/dogtrace",
+        href: "/products/dogtrace",
         description: "GPS tracking and training collars",
       },
       {
         label: "Night Vision Optics",
-        href: "/products1/night-vision-optics",
+        href: "/products/night-vision-optics",
         description: "Thermal imaging and digital night vision",
       },
       {
         label: "Flashlights",
-        href: "/products1/flashlights",
+        href: "/products/flashlights",
         description: "Hunting lamps and IR torches",
       },
       {
         label: "Rifles",
-        href: "/products1/rifles",
+        href: "/products/rifles",
         description: "Centrefire, rimfire and air rifles",
       },
       {
         label: "Shotguns",
-        href: "/products1/shotguns",
+        href: "/products/shotguns",
         description: "Game, clay and sporting guns",
       },
     ],
@@ -77,7 +77,7 @@ export const primaryNav: NavItem[] = [
 
 export const footerNav = [
   { label: "Home", href: "/" },
-  { label: "Products", href: "/products1/accessories" },
+  { label: "Products", href: "/products" },
   { label: "Special Offers", href: "/special-offers" },
   { label: "Brands", href: "/brands" },
   { label: "About", href: "/about" },
@@ -103,7 +103,7 @@ export const categories: Category[] = [
   {
     slug: "accessories",
     name: "Accessories",
-    href: "/products1/accessories",
+    href: "/products/accessories",
     shortDescription: "Sights, mounts, clay traps and field essentials.",
     description:
       "From Vortex sights and scope rings to Champion clay traps, moderators and aftermarket stocks. Practical equipment chosen for Irish hunting and clay shooting.",
@@ -115,7 +115,7 @@ export const categories: Category[] = [
   {
     slug: "dogtrace",
     name: "DogTrace",
-    href: "/products1/dogtrace",
+    href: "/products/dogtrace",
     shortDescription: "GPS dog tracking and training systems, fitted in-house.",
     description:
       "Official DogTrace GPS collars and training systems with Barron Sports’ exclusive heat-shrink protective armour fitted free of charge. In-house repairs for our customers.",
@@ -127,7 +127,7 @@ export const categories: Category[] = [
   {
     slug: "night-vision-optics",
     name: "Night Vision Optics",
-    href: "/products1/night-vision-optics",
+    href: "/products/night-vision-optics",
     shortDescription: "Thermal spotters and digital night vision riflescopes.",
     description:
       "InfiRay, Pixfra, Pulsar and Pard thermal and digital night vision for low-light observation and hunting. Selected for performance in Irish conditions.",
@@ -139,7 +139,7 @@ export const categories: Category[] = [
   {
     slug: "flashlights",
     name: "Flashlights",
-    href: "/products1/flashlights",
+    href: "/products/flashlights",
     shortDescription: "Dimmable hunting lamps and IR torches for night vision.",
     description:
       "Focusable tri-colour hunting flashlights and dedicated IR torches for digital night vision. Each lamp is dimmable, zoomable and supplied with a rechargeable 18650 battery.",
@@ -151,7 +151,7 @@ export const categories: Category[] = [
   {
     slug: "rifles",
     name: "Rifles",
-    href: "/products1/rifles",
+    href: "/products/rifles",
     shortDescription: "Centrefire, rimfire and air rifles from trusted makers.",
     description:
       "A carefully chosen selection of rifles from Howa, Tikka, Bergara, CZ, Steyr, Ruger, Anschütz and others. Advice, threading, mounting and package builds available in-store.",
@@ -163,7 +163,7 @@ export const categories: Category[] = [
   {
     slug: "shotguns",
     name: "Shotguns",
-    href: "/products1/shotguns",
+    href: "/products/shotguns",
     shortDescription: "Game and clay guns from established European makers.",
     description:
       "Shotguns from Beretta, Browning, Blaser, Miroku, Yildiz, Huglu and Webley & Scott, suited to Irish game, wildfowl and clay shooting.",
@@ -272,12 +272,12 @@ export const offers = SPECIAL_OFFERS;
 export const featuredOffers = SPECIAL_OFFERS;
 
 const offerCategoryHrefs: Record<string, string> = {
-  Rifles: "/products1/rifles",
-  DogTrace: "/products1/dogtrace",
-  Scopes: "/products1/night-vision-optics",
-  "Clay Traps": "/products1/accessories",
-  "Ear Protection": "/products1/accessories",
-  "Thermal Optics": "/products1/night-vision-optics",
+  Rifles: "/products/rifles",
+  DogTrace: "/products/dogtrace",
+  Scopes: "/products/night-vision-optics",
+  "Clay Traps": "/products/accessories",
+  "Ear Protection": "/products/accessories",
+  "Thermal Optics": "/products/night-vision-optics",
 };
 
 export function offerHref(offer: SpecialOffer) {
@@ -506,17 +506,23 @@ export type Product = {
   originalPrice?: string;
   summary: string;
   href?: string;
+  image?: string;
+  brands?: string[];
 };
+
+export const PRODUCT_PLACEHOLDER_IMAGE = "/products/product-placeholder.jpg";
 
 export const categoryProducts: Record<string, Product[]> = {
   accessories: [
     {
       name: "Vortex sights",
+      brands: ["Vortex"],
       summary: "Full line of Vortex sights at competitive prices.",
     },
     {
       name: "Champion Workhorse clay trap",
       price: "€625",
+      brands: ["Champion"],
       summary:
         "50-clay stack, 25-foot pedal release, remote-control upgrade, up to 75-yard throwing distance. Light portable 12V design. Next-day delivery available.",
     },
@@ -530,24 +536,28 @@ export const categoryProducts: Record<string, Product[]> = {
     {
       name: "DOG GPS X20 starter set",
       price: "€475",
+      brands: ["DogTrace"],
       summary:
         "Collar, handset and chargers. Locate dogs up to 20 km. Additional collars €250.",
     },
     {
       name: "DOG GPS X25 / X25T",
       price: "From €525",
+      brands: ["DogTrace"],
       summary:
         "X25 without training €525. X25T with training function €575. Additional collars from €275.",
     },
     {
       name: "DOG GPS X30 / X30T",
       price: "From €649",
+      brands: ["DogTrace"],
       summary:
         "Phone-linked sets. X30 €649, X30T with training €699. Maps, routes and barking indication via the Dogtrace app.",
     },
     {
       name: "d-control Professional 2000",
       price: "From €100",
+      brands: ["DogTrace"],
       summary:
         "Electronic training collars with over 30 models, from under €100 up to the Pro 2000.",
     },
@@ -555,16 +565,19 @@ export const categoryProducts: Record<string, Product[]> = {
   "night-vision-optics": [
     {
       name: "InfiRay Tube-TD50L",
+      brands: ["InfiRay"],
       summary:
         "Digital night vision riflescope in a traditional day-optic form. 13+ hour runtime, IP67, designed for bolt-action rifles.",
     },
     {
       name: "Pixfra thermal cameras",
+      brands: ["Pixfra"],
       summary:
         "Proprietary heat-detection thermal cameras for identifying quarry and observing wildlife in complete darkness.",
     },
     {
       name: "Pulsar Axion 2 XQ35 Pro",
+      brands: ["Pulsar"],
       summary:
         "Compact thermal spotter with AMOLED HD display, swappable APS3 battery and 16 GB internal memory.",
     },
@@ -572,6 +585,7 @@ export const categoryProducts: Record<string, Product[]> = {
       name: "Pard thermal spotters",
       price: "From €599",
       href: "/special-offers",
+      brands: ["Pard"],
       summary: "Thermal image spotters currently on offer.",
     },
   ],
@@ -592,11 +606,13 @@ export const categoryProducts: Record<string, Product[]> = {
   rifles: [
     {
       name: "Howa, Tikka, Bergara & CZ",
+      brands: ["Howa", "Tikka", "Bergara", "CZ"],
       summary:
         "Centrefire sporting rifles from established makers. Package builds with scope, moderator and bag available.",
     },
     {
       name: "Anschütz, Steyr, Ruger & Weihrauch",
+      brands: ["Anschütz", "Steyr", "Ruger", "Weihrauch"],
       summary:
         "Precision rimfire, hunting rifles and air rifles. Ask about current stock in Ennis.",
     },
@@ -604,22 +620,44 @@ export const categoryProducts: Record<string, Product[]> = {
       name: "Howa 1500 .223 Sporter package",
       price: "€1,399",
       href: "/special-offers",
+      brands: ["Howa"],
       summary: "Upgraded package currently on special offer.",
     },
   ],
   shotguns: [
     {
       name: "Beretta, Browning & Blaser",
+      brands: ["Beretta", "Browning", "Blaser"],
       summary:
         "Game and sporting shotguns from the names Irish shots know. Advice on fit, choke and cartridge in-store.",
     },
     {
       name: "Miroku, Yildiz, Huglu & Webley & Scott",
+      brands: ["Miroku", "Yildiz", "Huglu", "Webley & Scott"],
       summary:
         "A spread of price points for clays, walked-up game and wildfowling.",
     },
   ],
 };
+
+export const MIN_PRODUCTS_FOR_SEARCH = 6;
+
+export type CatalogProduct = Product & {
+  categorySlug: string;
+  categoryName: string;
+  categoryHref: string;
+};
+
+export function getAllProducts(): CatalogProduct[] {
+  return categories.flatMap((category) =>
+    (categoryProducts[category.slug] ?? []).map((product) => ({
+      ...product,
+      categorySlug: category.slug,
+      categoryName: category.name,
+      categoryHref: category.href,
+    })),
+  );
+}
 
 export function getCategory(slug: string) {
   return categories.find((category) => category.slug === slug);
