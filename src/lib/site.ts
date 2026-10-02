@@ -472,12 +472,12 @@ export const services: Service[] = [
     },
   },
   {
-    title: "Cerakote Coating",
+    title: "Barrel Threading",
     description:
-      "Cerakote ceramic coating for durable, weather-resistant finishes on firearms and parts. Discuss colours and coverage before the job is booked.",
+      "Barrel threading for silencers and sound moderators, carried out in-house. Bring the rifle and moderator so the thread, length and fit can be checked before work starts.",
     image: {
-      src: "/services/service-cerakote.jpg",
-      alt: "Rifle receiver and barrel hanging in a spray booth with a matte ceramic finish",
+      src: "/services/service-barrel-threading.jpg",
+      alt: "Rifle barrel in a padded vice being threaded for a sound moderator",
     },
   },
   {
