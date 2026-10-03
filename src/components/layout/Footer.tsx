@@ -6,8 +6,8 @@ import { categories, footerNav, site } from "@/lib/site";
 export function Footer() {
   return (
     <footer className="border-t border-line bg-forest">
-      <Container className="grid gap-12 py-8 md:grid-cols-2 lg:grid-cols-4">
-        <div>
+      <Container className="grid grid-cols-12 gap-x-6 gap-y-12 py-8">
+        <div className="col-span-12 md:col-span-6 lg:col-span-3">
           <Logo compact />
           <p className="mt-6 max-w-xs text-sm leading-relaxed text-stone">
             Specialist sporting and outdoor equipment from Ennis, County Clare.
@@ -16,7 +16,7 @@ export function Footer() {
           </p>
         </div>
 
-        <div>
+        <div className="col-span-6 lg:col-span-3">
           <h2 className="text-[11px] uppercase tracking-[0.28em] text-brass">
             Navigation
           </h2>
@@ -34,7 +34,7 @@ export function Footer() {
           </ul>
         </div>
 
-        <div>
+        <div className="col-span-6 lg:col-span-3">
           <h2 className="text-[11px] uppercase tracking-[0.28em] text-brass">
             Product Categories
           </h2>
@@ -52,7 +52,7 @@ export function Footer() {
           </ul>
         </div>
 
-        <div>
+        <div className="col-span-12 md:col-span-6 lg:col-span-3">
           <h2 className="text-[11px] uppercase tracking-[0.28em] text-brass">
             Contact
           </h2>

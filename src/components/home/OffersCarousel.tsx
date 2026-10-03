@@ -7,7 +7,10 @@ import { CoverImage } from "@/components/media/CoverImage";
 import { featuredOffers, offerHref } from "@/lib/site";
 
 const FADE_MS = 1600;
-const HOLD_MS = 10000;
+const FADE_MS_MOBILE = 1000;
+const FADE_MS_MANUAL = 180;
+const HOLD_MS = 12000;
+const HOLD_MS_MOBILE = 6500;
 
 function Arrow({
   direction,
@@ -48,43 +51,87 @@ export function OffersCarousel() {
   const [imageVisible, setImageVisible] = useState(true);
   const [marqueePaused, setMarqueePaused] = useState(false);
   const [fadePaused, setFadePaused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [transitionMs, setTransitionMs] = useState(FADE_MS);
   const busy = useRef(false);
   const reduceMotion = useRef(false);
+  const timers = useRef<number[]>([]);
+  const fadeMs = isMobile ? FADE_MS_MOBILE : FADE_MS;
+  const holdMs = isMobile ? HOLD_MS_MOBILE : HOLD_MS;
+  const fadeMsRef = useRef(fadeMs);
+  fadeMsRef.current = fadeMs;
 
   const active = ((index % total) + total) % total;
 
+  const clearTimers = useCallback(() => {
+    timers.current.forEach((id) => window.clearTimeout(id));
+    timers.current = [];
+  }, []);
+
   const advance = useCallback(
-    (direction: 1 | -1) => {
-      if (busy.current) return;
+    (direction: 1 | -1, quick = false) => {
+      if (busy.current && !quick) return;
+
+      clearTimers();
       busy.current = true;
 
       if (reduceMotion.current) {
+        setImageVisible(true);
         setIndex((current) => current + direction);
         busy.current = false;
         return;
       }
 
+      if (quick) {
+        setTransitionMs(FADE_MS_MANUAL);
+        setImageVisible(true);
+        setIndex((current) => current + direction);
+        const done = window.setTimeout(() => {
+          busy.current = false;
+        }, FADE_MS_MANUAL);
+        timers.current.push(done);
+        return;
+      }
+
+      const fade = fadeMsRef.current;
+      setTransitionMs(fade);
       setImageVisible(false);
-      window.setTimeout(() => {
+      const swap = window.setTimeout(() => {
         setIndex((current) => current + direction);
         setImageVisible(true);
-        window.setTimeout(() => {
+        const done = window.setTimeout(() => {
           busy.current = false;
-        }, FADE_MS);
-      }, FADE_MS);
+        }, fade);
+        timers.current.push(done);
+      }, fade);
+      timers.current.push(swap);
     },
-    [],
+    [clearTimers],
   );
 
   useEffect(() => {
-    reduceMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobile = window.matchMedia("(max-width: 1023px)");
+    const sync = () => {
+      reduceMotion.current = motion.matches;
+      setIsMobile(mobile.matches);
+    };
+    sync();
+    motion.addEventListener("change", sync);
+    mobile.addEventListener("change", sync);
+    return () => {
+      motion.removeEventListener("change", sync);
+      mobile.removeEventListener("change", sync);
+    };
   }, []);
+
+  useEffect(() => () => clearTimers(), [clearTimers]);
 
   useEffect(() => {
     if (fadePaused) return;
-    const timer = window.setInterval(() => advance(1), HOLD_MS);
+    const timer = window.setInterval(() => advance(1), holdMs);
     return () => window.clearInterval(timer);
-  }, [advance, fadePaused]);
+  }, [advance, fadePaused, holdMs]);
 
   useEffect(() => {
     const onVisibility = () => {
@@ -100,7 +147,7 @@ export function OffersCarousel() {
     <div className="relative">
       <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
         <div
-          className="relative min-w-0 px-0 lg:pr-4"
+          className="relative hidden min-w-0 px-0 lg:block lg:pr-4"
           onMouseEnter={() => setMarqueePaused(true)}
           onMouseLeave={() => setMarqueePaused(false)}
         >
@@ -137,7 +184,7 @@ export function OffersCarousel() {
                   className="absolute inset-0 block bg-panel"
                   style={{
                     opacity: isActive ? 1 : 0,
-                    transition: `opacity ${FADE_MS}ms ease`,
+                    transition: `opacity ${transitionMs}ms ease`,
                     pointerEvents: isActive ? "auto" : "none",
                   }}
                 >
@@ -179,7 +226,7 @@ export function OffersCarousel() {
           </div>
           <Arrow
             direction="next"
-            onClick={() => advance(1)}
+            onClick={() => advance(1, true)}
             label="Next featured offer"
             className="absolute top-1/2 right-2 z-10 hidden -translate-y-1/2 lg:flex"
           />
@@ -187,8 +234,8 @@ export function OffersCarousel() {
       </div>
 
       <div className="mt-6 flex items-center justify-center gap-8 lg:hidden">
-        <Arrow direction="prev" onClick={() => advance(-1)} label="Previous featured offer" />
-        <Arrow direction="next" onClick={() => advance(1)} label="Next featured offer" />
+        <Arrow direction="prev" onClick={() => advance(-1, true)} label="Previous featured offer" />
+        <Arrow direction="next" onClick={() => advance(1, true)} label="Next featured offer" />
       </div>
     </div>
   );
