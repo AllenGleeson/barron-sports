@@ -19,7 +19,7 @@ export default function ContactPage() {
       <PageHero
         eyebrow="Newpark, Ennis"
         title="Contact Us"
-        description="If you have an enquiry about stock, a repair or the right piece of equipment, ask here or call the shop."
+        description="If you have an enquiry about stock, a repair or the right piece of equipment, ask here or call before you travel."
         image={{
           src: "/contact/contact-fanore.jpg",
           alt: "Fanore Beach on the Atlantic coast of County Clare",
@@ -29,6 +29,13 @@ export default function ContactPage() {
         <Container className="grid gap-8 lg:grid-cols-2">
           <div>
             <h2 className="font-display text-3xl text-cream">Visit the shop</h2>
+            <p className="mt-4 text-base leading-relaxed text-parchment">
+              {site.visitNote} Phone{" "}
+              <a className="text-brass hover:text-cream" href={site.phone.href}>
+                {site.phone.display}
+              </a>{" "}
+              to arrange a time.
+            </p>
             <address className="mt-4 space-y-3 text-base not-italic leading-relaxed text-parchment">
               <p>
                 Phone{" "}

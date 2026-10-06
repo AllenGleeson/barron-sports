@@ -46,7 +46,8 @@ export default function AboutPage() {
               the exclusive protective armour fitted free on every collar we sell.
             </p>
             <p className="mt-8 text-sm text-stone">
-              Contact Gary on {site.phone.display}, or visit the shop during opening hours.
+              Contact Gary on {site.phone.display} to arrange a visit. Please do
+              not call in unannounced.
             </p>
             <div className="mt-8">
               <Button href="/contact-us">Contact Us</Button>

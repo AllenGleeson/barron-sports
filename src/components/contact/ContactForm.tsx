@@ -8,6 +8,7 @@ const SUBJECTS = [
   "Brand",
   "Special offer",
   "Repair or service",
+  "Firearms course",
   "Stock or availability",
 ] as const;
 

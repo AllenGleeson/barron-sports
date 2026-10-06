@@ -81,6 +81,7 @@ export function Footer() {
               </li>
             ))}
           </ul>
+          <p className="mt-4 text-sm text-parchment">Please call before visiting.</p>
         </div>
       </Container>
 

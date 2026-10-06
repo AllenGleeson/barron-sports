@@ -29,8 +29,13 @@ export function Button({
     href.startsWith("tel:") || href.startsWith("mailto:") || href.startsWith("http");
 
   if (isNative) {
+    const isHttp = href.startsWith("http");
     return (
-      <a href={href} className={classes}>
+      <a
+        href={href}
+        className={classes}
+        {...(isHttp ? { target: "_blank", rel: "noreferrer" } : {})}
+      >
         {children}
       </a>
     );
