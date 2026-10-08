@@ -32,6 +32,8 @@ function matchesQuery(product: Product, query: string, categoryName?: string) {
     product.name,
     product.summary,
     product.price,
+    product.badge,
+    product.condition,
     categoryName,
     ...productBrands(product),
   ]
@@ -79,12 +81,15 @@ function FilterSelect({
 export function ProductSearch({
   products,
   showCategory = false,
+  showImage = true,
 }: {
   products: Array<Product | CatalogProduct>;
   showCategory?: boolean;
+  showImage?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [condition, setCondition] = useState("");
   const [brand, setBrand] = useState("");
   const [sort, setSort] = useState<SortKey>("featured");
   const needle = query.trim().toLowerCase();
@@ -107,12 +112,21 @@ export function ProductSearch({
   }, [products]);
 
   const showCategoryFilter = categoryOptions.length > 1;
+  const conditionOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const product of products) {
+      if (product.badge === "New" || product.badge === "Used") names.add(product.badge);
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [products]);
+  const showConditionFilter = conditionOptions.length > 0;
 
   const results = useMemo(() => {
     const filtered = products.filter((product) => {
       const categoryName = "categoryName" in product ? product.categoryName : undefined;
       if (needle && !matchesQuery(product, needle, categoryName)) return false;
       if (brand && !productBrands(product).includes(brand)) return false;
+      if (condition && !product.featured && product.badge !== condition) return false;
       if (
         category &&
         (!("categorySlug" in product) || product.categorySlug !== category)
@@ -138,16 +152,22 @@ export function ProductSearch({
       });
     }
 
-    return sorted;
-  }, [brand, category, needle, products, sort]);
+    const featured = sorted.filter((product) => product.featured);
+    const rest = sorted.filter((product) => !product.featured);
+    return [...featured, ...rest];
+  }, [brand, category, condition, needle, products, sort]);
 
   return (
     <div>
       <div
         className={`grid gap-3 md:grid-cols-2 ${
-          showCategoryFilter
-            ? "xl:grid-cols-[minmax(0,1fr)_12rem_12rem_16rem]"
-            : "lg:grid-cols-[minmax(0,1fr)_14rem_16rem]"
+          showCategoryFilter && showConditionFilter
+            ? "xl:grid-cols-[minmax(0,1fr)_11rem_11rem_11rem_14rem]"
+            : showCategoryFilter
+              ? "xl:grid-cols-[minmax(0,1fr)_12rem_12rem_16rem]"
+              : showConditionFilter
+                ? "lg:grid-cols-[minmax(0,1fr)_12rem_12rem_14rem]"
+                : "lg:grid-cols-[minmax(0,1fr)_14rem_16rem]"
         }`}
       >
         <label
@@ -180,6 +200,21 @@ export function ProductSearch({
             ))}
           </FilterSelect>
         ) : null}
+        {showConditionFilter ? (
+          <FilterSelect
+            id="product-condition"
+            label="Condition"
+            value={condition}
+            onChange={setCondition}
+          >
+            <option value="">All</option>
+            {conditionOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </FilterSelect>
+        ) : null}
         <FilterSelect id="product-brand" label="Brand" value={brand} onChange={setBrand}>
           <option value="">All brands</option>
           {brandOptions.map((name) => (
@@ -203,7 +238,12 @@ export function ProductSearch({
       </div>
       <div className="mt-8">
         {results.length > 0 ? (
-          <ProductCardList products={results} showCategory={showCategory} />
+          <ProductCardList
+            products={results}
+            showCategory={showCategory}
+            showImage={showImage}
+            layout={showImage ? "grid" : "list"}
+          />
         ) : (
           <p className="text-parchment">No products match that search.</p>
         )}

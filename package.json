@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "preview": "npx --yes serve out",
+    "import-stock": "python scripts/import-stock.py",
     "start": "next start",
     "lint": "eslint"
   },
