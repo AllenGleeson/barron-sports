@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { OfferCard } from "@/components/cards/OfferCard";
+import { SpecialOffersGrid } from "@/components/offers/SpecialOffersGrid";
 import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -25,11 +25,7 @@ export default function SpecialOffersPage() {
       />
       <section className="bg-ink py-16 lg:py-24">
         <Container>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {offers.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} />
-            ))}
-          </div>
+          <SpecialOffersGrid offers={offers} />
           <div className="mt-12">
             <Button href="/contact-us" variant="secondary">
               Enquire about an offer

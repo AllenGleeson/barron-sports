@@ -77,6 +77,7 @@ export const primaryNav: NavItem[] = [
   { label: "Course", href: "/course" },
   { label: "About", href: "/about" },
   { label: "Contact Us", href: "/contact-us" },
+  { label: "Admin", href: "/admin" },
 ];
 
 export const footerNav = [
@@ -188,6 +189,7 @@ export type SpecialOffer = {
   rrp?: string;
   price: string;
   badge?: string;
+  href?: string;
 };
 
 export const SPECIAL_OFFERS: SpecialOffer[] = [
@@ -286,7 +288,7 @@ const offerCategoryHrefs: Record<string, string> = {
 };
 
 export function offerHref(offer: SpecialOffer) {
-  return offerCategoryHrefs[offer.category] ?? "/special-offers";
+  return offer.href ?? offerCategoryHrefs[offer.category] ?? "/special-offers";
 }
 
 export type Brand = {
@@ -451,7 +453,7 @@ export const brands: Brand[] = [
 
 export const featuredBrands = brands;
 
-const BRAND_ALIASES: Record<string, string> = {
+export const brandAliases: Record<string, string> = {
   browning: "Browning Arms Company",
   "j. g. anschütz gmbh & co. kg": "J. G. Anschütz GmbH & Co. KG",
   anschütz: "J. G. Anschütz GmbH & Co. KG",
@@ -471,7 +473,7 @@ const BRAND_ALIASES: Record<string, string> = {
 export function brandLogoFor(name?: string) {
   if (!name) return undefined;
   const needle = name.trim().toLowerCase();
-  const aliased = BRAND_ALIASES[needle] ?? name;
+  const aliased = brandAliases[needle] ?? name;
   const exact = brands.find((brand) => brand.name === aliased);
   if (exact) return exact;
   return brands.find((brand) => {
@@ -979,7 +981,7 @@ export const accessoriesCatalog: CategoryCatalogContent = {
     {
       id: "champion-workhorse",
       name: "Champion Workhorse",
-      price: "€625",
+      price: "€599",
       eyebrow: "Including next-day delivery",
       images: [
         {
@@ -1112,14 +1114,33 @@ export const categoryProducts: Record<string, Product[]> = {
       summary: "Full line of Vortex sights at competitive prices.",
     },
     {
-      name: "Champion Workhorse clay trap",
-      price: "€625",
+      name: "Champion Clay Trap - Workhorse",
+      price: "€599",
       brands: ["Champion"],
       href: "/products/accessories#champion-workhorse",
-      image:
-        "https://d2f0ora2gkri0g.cloudfront.net/a2/4f/a24ff790-6e38-4573-99e7-3f81293a5ed3.jpg",
+      image: "/offers/champion-clay-trap.jpg",
       summary:
-        "50-clay stack, 25-foot pedal release, remote-control upgrade, up to 75-yard throwing distance. Light portable 12V design. Next-day delivery available.",
+        "12V electronic operation, 50-clay stack, 25-foot pedal release, light portable design. Next-day delivery available (€25).",
+    },
+    {
+      name: "Barron Sports AO Illuminated Scope",
+      price: "€175",
+      originalPrice: "€225",
+      href: "/products/accessories",
+      image:
+        "https://d2f0ora2gkri0g.cloudfront.net/6e/ad/6ead7c06-ffd5-4cd0-8d0e-8aeb0698e482.jpeg",
+      summary:
+        "Mil-dot reticle 6-24x50, 1-inch tube with illumination, includes mounting rings.",
+    },
+    {
+      name: "Impact Electronic Ear Muffs",
+      price: "€85",
+      brands: ["Howard Leight by Honeywell"],
+      href: "/products/accessories",
+      image:
+        "https://d2f0ora2gkri0g.cloudfront.net/47/d5/47d5386e-8c4d-4ea2-b126-6a17a9c5ff01.png",
+      summary:
+        "Adjustable headband, shuts off impulse noise over 82 dB, 4X sound amplification.",
     },
     {
       name: "Scope rings, mounts & moderators",
@@ -1131,6 +1152,16 @@ export const categoryProducts: Record<string, Product[]> = {
     },
   ],
   dogtrace: [
+    {
+      name: "GPS Dog Tracking Systems",
+      price: "Inquire for Pricing",
+      brands: ["DogTrace"],
+      href: "/products/dogtrace",
+      image: "/offers/dogtrace-gps.jpg",
+      badge: "Full Lineup",
+      summary:
+        "Full line-up of GPS tracking systems. No subscription required. High-visibility fluorescent orange collar.",
+    },
     {
       name: "DOG GPS X20 starter set",
       price: "€475",
@@ -1201,12 +1232,13 @@ export const categoryProducts: Record<string, Product[]> = {
         "Compact thermal spotter with AMOLED HD display, swappable APS3 battery and 16 GB internal memory.",
     },
     {
-      name: "Pard thermal spotters",
+      name: "Pard Thermal Image Spotters",
       price: "From €599",
-      href: "/special-offers",
+      href: "/products/night-vision-optics",
       brands: ["Pard"],
       image: "https://cdn-new.pard.com/mall/landing/product/leopard-256/carousel/01.png",
-      summary: "Thermal image spotters currently on offer.",
+      summary:
+        "High-resolution thermal imaging optics in a compact handheld design for field tracking.",
     },
   ],
   flashlights: [
@@ -1235,7 +1267,20 @@ export const categoryProducts: Record<string, Product[]> = {
       summary: "Spare rechargeable battery for Barron Sports hunting flashlights.",
     },
   ],
-  rifles: rifleStock,
+  rifles: [
+    {
+      name: "Howa 1500",
+      price: "€1,399",
+      brands: ["Howa"],
+      featured: true,
+      href: "/products/rifles",
+      image:
+        "https://d2f0ora2gkri0g.cloudfront.net/63/f0/63f091be-4fce-4925-b832-45a38dfd4efb.png",
+      summary:
+        ".223 · Sporter package with Nikko Stirling Diamond Long Range 4-16x50, RCC moderator, bipod and rifle bag.",
+    },
+    ...rifleStock,
+  ],
   shotguns: shotgunStock,
 };
 

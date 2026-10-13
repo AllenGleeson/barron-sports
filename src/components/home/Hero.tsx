@@ -27,11 +27,10 @@ export function Hero() {
             Ennis, County Clare
           </p>
           <h1 className="mt-5 font-display text-5xl leading-[1.05] text-cream sm:text-6xl lg:text-7xl">
-            Equipment for the Outdoors
+            For all your shooting & gunsmithing needs
           </h1>
           <p className="mt-7 max-w-lg text-lg leading-relaxed text-parchment">
-            Quality sporting equipment, optics, firearms, accessories and
-            specialist products from trusted brands.
+            Firearms, optics and DogTrace from Ennis, with gunsmithing in-house.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button href="/products">Explore Products</Button>
