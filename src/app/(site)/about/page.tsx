@@ -19,8 +19,8 @@ export default function AboutPage() {
         title="About Barron Sports"
         description="A specialist sporting and outdoor equipment shop, not a general sports warehouse."
         image={{
-          src: "/about/about-cliffs-of-moher.jpg",
-          alt: "The Cliffs of Moher on the Atlantic coast of County Clare",
+          src: "https://d2f0ora2gkri0g.cloudfront.net/bkpam2312266_dsc_0519.jpg",
+          alt: "Rifles and shotguns on the walls of Barron Sports in Ennis",
         }}
       />
       <section className="bg-ink py-16 lg:py-24">
