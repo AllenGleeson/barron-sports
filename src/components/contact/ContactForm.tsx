@@ -93,16 +93,20 @@ function SubjectSearch({ error, onChange }: { error: boolean; onChange: () => vo
   const subject = (checked ?? query).trim();
 
   useEffect(() => {
-    const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    const closeIfOutside = (node: EventTarget | null) => {
+      if (!rootRef.current?.contains(node as Node)) setOpen(false);
     };
+    const onPointerDown = (event: PointerEvent) => closeIfOutside(event.target);
+    const onFocusIn = (event: FocusEvent) => closeIfOutside(event.target);
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("focusin", onFocusIn);
     window.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("keydown", onKey);
     };
   }, []);
@@ -135,6 +139,7 @@ function SubjectSearch({ error, onChange }: { error: boolean; onChange: () => vo
           value={query}
           autoComplete="off"
           onFocus={() => setOpen(true)}
+          onMouseDown={() => setOpen(true)}
           onChange={(event) => {
             const next = event.target.value;
             setQuery(next);
@@ -150,6 +155,7 @@ function SubjectSearch({ error, onChange }: { error: boolean; onChange: () => vo
             type="button"
             aria-label="Clear subject"
             className="absolute inset-y-0 right-1 z-10 flex cursor-pointer items-center px-2 text-brass hover:text-cream"
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               setQuery("");
               setChecked(null);
@@ -173,6 +179,7 @@ function SubjectSearch({ error, onChange }: { error: boolean; onChange: () => vo
             id={listId}
             role="listbox"
             className="absolute z-20 mt-px w-full border border-line bg-ink py-1 shadow-2xl shadow-black/40"
+            onMouseDown={(event) => event.preventDefault()}
           >
             {matches.map((item) => {
               const isChecked = checked === item;

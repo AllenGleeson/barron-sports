@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { CoverImage } from "@/components/media/CoverImage";
 import { PageHero } from "@/components/interior/PageHero";
 import { Container } from "@/components/ui/Container";
 import { site } from "@/lib/site";
 
-const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address.full)}`;
+const mapsQuery = encodeURIComponent(site.address.full);
+const mapsHref = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+const mapsEmbedSrc = `https://maps.google.com/maps?q=${mapsQuery}&z=16&hl=en&output=embed`;
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -64,18 +65,26 @@ export default function ContactPage() {
                 </li>
               ))}
             </ul>
-            <a
-              href={mapsHref}
-              target="_blank"
-              rel="noreferrer"
-              className="relative mt-6 block aspect-[16/9] overflow-hidden border border-line"
-            >
-              <CoverImage
-                src="/contact/contact-map-placeholder.jpg"
-                alt="Map of Barron Sports in Newpark, Ennis, Co. Clare"
-                sizes="(min-width: 1024px) 40vw, 100vw"
-              />
-            </a>
+            <div className="mt-6">
+              <div className="relative aspect-[16/9] overflow-hidden border border-line bg-forest">
+                <iframe
+                  title="Map of Barron Sports in Newpark, Ennis, Co. Clare"
+                  src={mapsEmbedSrc}
+                  className="absolute inset-0 h-full w-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+              </div>
+              <a
+                href={mapsHref}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-block text-sm text-brass hover:text-cream"
+              >
+                Open in Google Maps
+              </a>
+            </div>
           </div>
           <div>
             <h2 className="mb-4 font-display text-3xl text-cream">Send a message</h2>

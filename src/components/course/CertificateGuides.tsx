@@ -1,12 +1,53 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import {
-  GARDA_FCA1_HREF,
+  GARDA_COMMISSIONER_GUIDELINES_HREF,
   GARDA_LICENSING_HREF,
   certificateGuides,
   type CertificateGuide,
   type GuideBlock,
+  type GuideItem,
 } from "@/lib/site";
+
+function guideItemKey(item: GuideItem) {
+  return (typeof item === "string" ? item : item.text).slice(0, 48);
+}
+
+function GuideLinkedText({ item }: { item: GuideItem }) {
+  if (typeof item === "string") return item;
+
+  const start = item.text.indexOf(item.linkText);
+  if (start === -1) {
+    return (
+      <>
+        {item.text}{" "}
+        <a
+          href={item.href}
+          className="text-brass hover:text-cream"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {item.linkText}
+        </a>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {item.text.slice(0, start)}
+      <a
+        href={item.href}
+        className="text-brass hover:text-cream"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {item.linkText}
+      </a>
+      {item.text.slice(start + item.linkText.length)}
+    </>
+  );
+}
 
 function GuideBlocks({ blocks }: { blocks: GuideBlock[] }) {
   return (
@@ -29,7 +70,9 @@ function GuideBlocks({ blocks }: { blocks: GuideBlock[] }) {
           {block.items ? (
             <ul className={`list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-parchment ${block.heading ? "mt-2" : ""}`}>
               {block.items.map((item) => (
-                <li key={item.slice(0, 48)}>{item}</li>
+                <li key={guideItemKey(item)}>
+                  <GuideLinkedText item={item} />
+                </li>
               ))}
             </ul>
           ) : null}
@@ -77,16 +120,21 @@ export function CertificateGuides() {
           </h2>
           <p className="mt-6 text-base leading-relaxed text-parchment">
             If you are applying for a first certificate, or substituting a gun,
-            the application is Form FCA1, submitted to your local Garda station.
-            The notes below are practical shop guidance for customers in Ennis.
-            They are not legal advice, and they do not replace the Garda
-            Commissioner’s Guidelines or the form itself.
+            the application is made using the FCA1 form, submitted to your local
+            Garda station. The notes below are a practical shop guidance for our
+            customers. They are not legal advice, and they do not replace the{" "}
+            <a
+              href={GARDA_COMMISSIONER_GUIDELINES_HREF}
+              className="text-brass hover:text-cream"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Garda Commissioner’s Guidelines
+            </a>{" "}
+            or the form itself.
           </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href={GARDA_FCA1_HREF}>Official FCA1 form</Button>
-            <Button href={GARDA_LICENSING_HREF} variant="ghost">
-              Garda firearms licensing
-            </Button>
+          <div className="mt-6">
+            <Button href={GARDA_LICENSING_HREF}>Garda firearms licensing</Button>
           </div>
         </div>
 

@@ -63,14 +63,6 @@ export function ProductCard({
             </div>
             <h2 className="mt-1 font-display text-xl text-cream">{product.name}</h2>
             <p className="mt-1 text-sm leading-relaxed text-parchment">{product.summary}</p>
-            {product.href ? (
-              <Link
-                href={product.href}
-                className="mt-2 inline-block text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
-              >
-                View offer →
-              </Link>
-            ) : null}
             </div>
           </div>
           {product.price ? (
@@ -126,16 +118,71 @@ export function ProductCard({
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-parchment">{product.summary}</p>
         {product.price ? <p className="mt-5 text-brass">{product.price}</p> : null}
-        {product.href ? (
-          <Link
-            href={product.href}
-            className="mt-5 inline-block text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
-          >
-            View offer →
-          </Link>
-        ) : null}
       </div>
     </li>
+  );
+}
+
+function productKey(product: Product | CatalogProduct) {
+  const catalog = "categorySlug" in product ? product.categorySlug : "";
+  return `${catalog}-${product.badge ?? ""}-${product.name}-${product.price ?? ""}-${product.summary}`;
+}
+
+function productHasCardImage(product: Product, showImage: boolean) {
+  return showImage && Boolean(product.image?.trim());
+}
+
+function layoutGroups(
+  products: Array<Product | CatalogProduct>,
+  showImage: boolean,
+) {
+  const groups: { layout: "grid" | "list"; products: Array<Product | CatalogProduct> }[] =
+    [];
+  for (const product of products) {
+    const layout = productHasCardImage(product, showImage) ? "grid" : "list";
+    const last = groups[groups.length - 1];
+    if (last?.layout === layout) {
+      last.products.push(product);
+    } else {
+      groups.push({ layout, products: [product] });
+    }
+  }
+  return groups;
+}
+
+function ProductGroup({
+  products,
+  layout,
+  showCategory,
+  showImage,
+}: {
+  products: Array<Product | CatalogProduct>;
+  layout: "grid" | "list";
+  showCategory: boolean;
+  showImage: boolean;
+}) {
+  return (
+    <ul
+      className={
+        layout === "list"
+          ? "border-line"
+          : "grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      }
+    >
+      {products.map((product) => {
+        const catalog = "categoryName" in product ? product : null;
+        return (
+          <ProductCard
+            key={productKey(product)}
+            product={product}
+            categoryLabel={showCategory ? catalog?.categoryName : undefined}
+            categoryHref={showCategory ? catalog?.categoryHref : undefined}
+            showImage={layout === "grid" && showImage}
+            layout={layout}
+          />
+        );
+      })}
+    </ul>
   );
 }
 
@@ -150,38 +197,40 @@ export function ProductCardList({
   showImage?: boolean;
   layout?: "grid" | "list";
 }) {
-  const useList =
-    layout === "list" ||
-    (products.length > 0 &&
-      products.every(
-        (product) =>
-          "categorySlug" in product &&
-          (product.categorySlug === "rifles" || product.categorySlug === "shotguns"),
-      ));
+  if (layout === "list" || !showImage) {
+    return (
+      <ProductGroup
+        products={products}
+        layout="list"
+        showCategory={showCategory}
+        showImage={false}
+      />
+    );
+  }
+
+  const groups = layoutGroups(products, showImage);
+  if (groups.length === 1) {
+    return (
+      <ProductGroup
+        products={groups[0].products}
+        layout={groups[0].layout}
+        showCategory={showCategory}
+        showImage={showImage}
+      />
+    );
+  }
 
   return (
-    <ul
-      className={
-        useList
-          ? "border-line"
-          : "grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-      }
-    >
-      {products.map((product) => {
-        const catalog = "categoryName" in product ? product : null;
-        const firearm =
-          catalog?.categorySlug === "rifles" || catalog?.categorySlug === "shotguns";
-        return (
-          <ProductCard
-            key={`${catalog?.categorySlug ?? ""}-${product.badge ?? ""}-${product.name}-${product.price ?? ""}-${product.summary}`}
-            product={product}
-            categoryLabel={showCategory ? catalog?.categoryName : undefined}
-            categoryHref={showCategory ? catalog?.categoryHref : undefined}
-            showImage={showImage && !firearm}
-            layout={useList ? "list" : "grid"}
-          />
-        );
-      })}
-    </ul>
+    <div className="space-y-8">
+      {groups.map((group, index) => (
+        <ProductGroup
+          key={`${group.layout}-${productKey(group.products[0])}-${index}`}
+          products={group.products}
+          layout={group.layout}
+          showCategory={showCategory}
+          showImage={showImage}
+        />
+      ))}
+    </div>
   );
 }

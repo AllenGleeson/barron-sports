@@ -57,6 +57,29 @@ export function isDiscounted(row: {
   );
 }
 
+export function productSaleCents(row: {
+  priceCents: number | null;
+  discountPriceCents: number | null;
+}) {
+  if (isDiscounted(row) && row.discountPriceCents != null) {
+    return row.discountPriceCents;
+  }
+  return row.priceCents;
+}
+
+export function sumProductSaleCents(
+  products: { priceCents: number | null; discountPriceCents: number | null }[],
+) {
+  let total = 0;
+  let missing = 0;
+  for (const product of products) {
+    const cents = productSaleCents(product);
+    if (cents == null) missing += 1;
+    else total += cents;
+  }
+  return { total, missing, counted: products.length - missing };
+}
+
 export function discountPercentOf(row: {
   priceCents: number | null;
   discountPriceCents: number | null;

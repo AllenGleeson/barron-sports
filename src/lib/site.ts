@@ -126,8 +126,8 @@ export const categories: Category[] = [
     description:
       "Official DogTrace GPS collars and training systems with Barron Sports’ exclusive heat-shrink protective armour fitted free of charge. In-house repairs for our customers.",
     image: {
-      src: "/categories/category-dogtrace-v3.jpg",
-      alt: "Working gundog in Irish grassland wearing a GPS tracking collar",
+      src: "/categories/category-dogtrace.png",
+      alt: "DogTrace GPS handheld tracker and orange tracking collar",
     },
   },
   {
@@ -186,6 +186,8 @@ export type SpecialOffer = {
   title: string;
   image: string;
   description: string[];
+  summary?: string;
+  kind?: "offer" | "package";
   rrp?: string;
   price: string;
   badge?: string;
@@ -220,6 +222,7 @@ export const SPECIAL_OFFERS: SpecialOffer[] = [
     ],
     price: "Inquire for Pricing",
     badge: "Full Lineup",
+    href: "/products/dogtrace",
   },
   {
     id: "barron-ao-scope",
@@ -289,6 +292,17 @@ const offerCategoryHrefs: Record<string, string> = {
 
 export function offerHref(offer: SpecialOffer) {
   return offer.href ?? offerCategoryHrefs[offer.category] ?? "/special-offers";
+}
+
+export function offerHasViewLink(offer: Pick<SpecialOffer, "id" | "category">) {
+  return (
+    offer.id === "dogtrace-gps" || offer.category.toLowerCase() === "dogtrace"
+  );
+}
+
+export function isSpecialOfferProduct(product: Pick<Product, "name">) {
+  const lower = product.name.toLowerCase();
+  return SPECIAL_OFFERS.some((offer) => offer.title.toLowerCase() === lower);
 }
 
 export type Brand = {
@@ -544,8 +558,8 @@ export const firearmsCourse = {
   summary:
     "If you have completed Form FCA1 and An Garda Síochána have granted your firearm certificate, proceed to this course. HCAP is Ireland’s recognised Hunter Competence Assessment Programme for safe firearm handling and competent hunting practice.",
   image: {
-    src: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=1600&q=80",
-    alt: "Sporting rifle on a dark studio background",
+    src: "/course/course-hero.jpg",
+    alt: "Hunting rifle and shotgun on an outdoor shooting bench at dusk",
   },
   topics: [
     {
@@ -567,15 +581,25 @@ export const firearmsCourse = {
   ],
 } as const;
 
-export const GARDA_FCA1_HREF =
-  "https://www.garda.ie/en/about-us/online-services/firearms-licensing/fca1_firearm_certificate_application-copy.pdf";
 export const GARDA_LICENSING_HREF =
   "https://www.garda.ie/en/about-us/online-services/firearms-licensing/";
+export const GARDA_COMMISSIONER_GUIDELINES_HREF =
+  "https://www.garda.ie/en/about-us/online-services/firearms-licensing/commissioner-s-guidelines-2018.pdf";
+export const NPWS_FORESHORE_HREF =
+  "https://www.npws.ie/licencesandconsents/hunting/fauna-state-owned-foreshore";
+
+export type GuideItem =
+  | string
+  | {
+      text: string;
+      href: string;
+      linkText: string;
+    };
 
 export type GuideBlock = {
   heading?: string;
   paragraphs?: string[];
-  items?: string[];
+  items?: GuideItem[];
 };
 
 export type CertificateGuide = {
@@ -592,18 +616,18 @@ export const certificateGuides: CertificateGuide[] = [
     blocks: [
       {
         paragraphs: [
-          "An Garda Síochána is expected to decide a firearm certificate application within 90 days. That clock starts only when a fully completed Form FCA1 is received. Missing signatures, photographs or supporting papers can stop the clock before it starts.",
+          "An Garda Síochána are expected to decide a firearm certificate application within 90 days. That clock starts only when a fully completed Form FCA1 is received. Missing signatures, photographs or supporting papers can stop the clock before it starts.",
         ],
       },
       {
         heading: "What to include",
         items: [
           "Two recent passport-sized photographs.",
-          "Two character referees: names, addresses and contact numbers. They should have known you for at least two years. Family members, registered firearms dealers and serving Gardaí are not suitable referees.",
+          "Two character referees: names, addresses and contact numbers. They should have known you for at least two years. Only one family member can be included. Registered firearms dealers and serving Gardaí are not suitable referees.",
           "Your GP’s name and contact details, so the Gardaí can make medical enquiries about suitability if they need to.",
           "First-time applicants, or anyone whose previous certificate lapsed more than three years ago, should attach proof of competency — a Garda-recognised firearms safety course, or evidence of joining an authorised target shooting club.",
           "If you have held a certificate before, quote the certificate number or expiry instead of repeating a competency course, unless you are asked for more.",
-          "Attach landowner permission, club membership or an NPWS foreshore licence where they support your reason for the gun.",
+          "Attach landowner permission, lease agreements, club membership or an NPWS foreshore licence where they support your reason for the gun use.",
         ],
       },
       {
@@ -615,7 +639,7 @@ export const certificateGuides: CertificateGuide[] = [
       {
         heading: "Handing it in",
         items: [
-          "Call the local station first and ask which member deals with firearm certificates, and when they are on duty.",
+          "Call the local station first and ask which member or staff deals with firearm certificates, and when they are on duty.",
           "Hand the completed form to that officer rather than leaving it at the public counter.",
           "Ask them to date-stamp it as received in front of you, check the date, and keep a copy of the stamped front page or a receipt. That stamp is your proof that the 90-day period has started.",
         ],
@@ -623,8 +647,9 @@ export const certificateGuides: CertificateGuide[] = [
       {
         heading: "If it is refused, or there is no decision",
         paragraphs: [
+          "Applications that exceed 90 days default to a refusal.",
           "You may appeal to the District Court under Section 15A of the Firearms Act 1925 (as amended). A written refusal starts that right. If 90 days pass from a date-stamped complete application with neither grant nor refusal, the law treats that as a refusal and you may also appeal.",
-          "An appeal must be lodged at the District Court office for the area where you live, within 30 days of the refusal (or of the 90 days running out). Name the Superintendent or Chief Superintendent as respondent, state the grounds, and serve a copy on the Gardaí. Ask a solicitor if you are going down this road — Barron Sports can talk you through the paperwork, but we do not run court applications.",
+          "An appeal must be lodged at the District Court office for the area where you live, within 30 days of the refusal (or of the 90 days running out). Name the Superintendent or Chief Superintendent (for restricted firearms) as respondent, state the grounds, and serve a copy on the Gardaí. Ask a solicitor if you are going down this road — Barron Sports can talk you through the paperwork, but we do not run court applications.",
         ],
       },
     ],
@@ -650,15 +675,19 @@ export const certificateGuides: CertificateGuide[] = [
       {
         heading: "Hunting, shooting rights and foreshore",
         items: [
-          "Written permission from a landowner to hunt or shoot over their ground.",
+          "Written permission from a landowner to hunt or shoot over their ground and an indication of land size.",
           "Membership of a recognised hunting or wildfowling club with shooting rights over club land.",
-          "NPWS foreshore licences — required for shooting on or over state-owned foreshore, tidal areas, certain inland waters and larger lakes. Apply through the NPWS Wildlife Licensing Unit, not through the shop.",
+          {
+            text: "NPWS foreshore licences — required for shooting on or over state-owned foreshore, tidal areas, certain inland waters and larger lakes. Apply through the NPWS Wildlife Licensing Unit, not through the shop.",
+            href: NPWS_FORESHORE_HREF,
+            linkText: "NPWS Wildlife Licensing Unit",
+          },
         ],
       },
       {
         heading: "Target shooting and sport",
         items: [
-          "Competitive or recreational target shooting. Rifles and pistols generally require membership of an authorised club, on a certified range.",
+          "Competitive or recreational target shooting. Rifles and pistols generally require membership of an authorised club, on a certified range or clay pigeon club.",
           "A blank-firing starting pistol used only to start races or similar events.",
         ],
       },
@@ -689,14 +718,6 @@ export const certificateGuides: CertificateGuide[] = [
         ],
       },
       {
-        heading: "Ammunition",
-        items: [
-          "Store ammunition separately from the firearm. Do not leave a gun loaded, and do not keep ammunition in the same primary compartment as the gun.",
-          "Keep ammunition in its own locked receptacle, or in a separate locked compartment inside the safe.",
-          "Keep keys, codes and combinations where children and other unauthorised people cannot find them.",
-        ],
-      },
-      {
         heading: "In the vehicle",
         items: [
           "The firearm must be unloaded, out of sight, and in a proper case or sleeve.",
@@ -713,6 +734,14 @@ export const certificateGuides: CertificateGuide[] = [
           "Up to three unrestricted firearms — a compliant safe, securely anchored.",
           "Four or five unrestricted firearms — a compliant safe, plus an intruder alarm meeting I.S. EN 50131.",
           "Six or more unrestricted firearms, or three or more restricted firearms — a compliant safe, a monitored alarm, and robust locks on accessible external doors and windows.",
+        ],
+      },
+      {
+        heading: "Ammunition",
+        items: [
+          "Store ammunition separately from the firearm. Do not leave a gun loaded, and do not keep ammunition in the same primary compartment as the gun.",
+          "Keep ammunition in its own locked receptacle, or in a separate locked compartment inside the safe.",
+          "Keep keys, codes and combinations where children and other unauthorised people cannot find them.",
         ],
       },
       {

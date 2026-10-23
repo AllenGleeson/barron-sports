@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AdminCheckbox,
   AdminField,
+  AdminFormIntro,
   AdminInput,
   AdminSelect,
   AdminTextarea,
@@ -36,6 +37,7 @@ import {
 } from "@/components/admin/list";
 import {
   isFirearmCategory,
+  type AdminBrand,
   type AdminProduct,
   type ProductCondition,
 } from "@/lib/admin/models";
@@ -50,6 +52,10 @@ import {
 } from "@/lib/admin/money";
 import { slugify } from "@/lib/admin/slug";
 import { newAdminId, useAdminStore } from "@/lib/admin/store";
+import {
+  scrollToFirstInvalid,
+  validateProductDraft,
+} from "@/lib/admin/validation";
 
 type PriceFilter =
   | "all"
@@ -118,6 +124,98 @@ function matchesDiscountFilter(row: AdminProduct, filter: DiscountFilter) {
   return discounted && discountPercentOf(row) === Number(filter);
 }
 
+function brandMatchesQuery(brand: AdminBrand, needle: string) {
+  if (brand.name.toLowerCase().includes(needle)) return true;
+  return brand.aliases.some((alias) => alias.toLowerCase().includes(needle));
+}
+
+function ProductBrandPicker({
+  brands,
+  selectedIds,
+  onChange,
+}: {
+  brands: AdminBrand[];
+  selectedIds: string[];
+  onChange: (brandIds: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const selected = new Set(selectedIds);
+
+  const visible = useMemo(() => {
+    const chosen = new Set(selectedIds);
+    const sorted = brands.slice().sort((a, b) => {
+      const aSelected = chosen.has(a.id) ? 0 : 1;
+      const bSelected = chosen.has(b.id) ? 0 : 1;
+      if (aSelected !== bSelected) return aSelected - bSelected;
+      return a.sortOrder - b.sortOrder || a.name.localeCompare(b.name);
+    });
+    if (!needle) return sorted;
+    return sorted.filter(
+      (brand) => chosen.has(brand.id) || brandMatchesQuery(brand, needle),
+    );
+  }, [brands, needle, selectedIds]);
+
+  return (
+    <div className="lg:col-span-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-stone">Brands</p>
+        <p className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-stone">
+          Optional
+        </p>
+      </div>
+      <div className="relative mt-2">
+        <input
+          type="search"
+          value={query}
+          autoComplete="off"
+          placeholder="Search brands"
+          aria-label="Search brands"
+          className="subject-search w-full border border-line bg-ink px-3 py-2.5 pr-10 text-sm text-cream outline-none focus:border-brass"
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        {query ? (
+          <button
+            type="button"
+            aria-label="Clear brand search"
+            className="absolute inset-y-0 right-1 z-10 flex cursor-pointer items-center px-2 text-brass hover:text-cream"
+            onClick={() => setQuery("")}
+          >
+            <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" aria-hidden="true">
+              <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+          </button>
+        ) : null}
+      </div>
+      {selectedIds.length > 0 ? (
+        <p className="mt-2 text-xs text-stone">
+          {selectedIds.length} selected
+        </p>
+      ) : null}
+      <div className="mt-2 grid max-h-48 grid-cols-1 gap-2 overflow-y-auto border border-line bg-ink p-3 sm:grid-cols-2 lg:grid-cols-3">
+        {visible.map((brand) => (
+          <AdminCheckbox
+            key={brand.id}
+            label={brand.name}
+            checked={selected.has(brand.id)}
+            onChange={(event) => {
+              const brandIds = event.target.checked
+                ? [...selectedIds, brand.id]
+                : selectedIds.filter((id) => id !== brand.id);
+              onChange(brandIds);
+            }}
+          />
+        ))}
+        {visible.length === 0 ? (
+          <p className="text-sm text-parchment sm:col-span-2 lg:col-span-3">
+            No brands match that search.
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function ProductsAdmin() {
   const { data, upsertProduct, patchProducts, remove } = useAdminStore();
   const [search, setSearch] = useState("");
@@ -136,22 +234,17 @@ export function ProductsAdmin() {
   const [discountPlan, setDiscountPlan] = useState<DiscountPlan | null>(null);
   const [discountError, setDiscountError] = useState("");
   const [publishPlan, setPublishPlan] = useState<PublishPlan | null>(null);
-  const [specialOfferPlan, setSpecialOfferPlan] = useState<PublishPlan | null>(
-    null,
-  );
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [columns, setColumns] = useState({
     category: true,
     price: true,
     discount: true,
     published: true,
-    specialOffer: true,
     dateAdded: true,
     lastUpdated: true,
   });
-  const [specialOfferFilter, setSpecialOfferFilter] =
-    useState<PublishedFilter>("all");
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
   const [discountFilter, setDiscountFilter] = useState<DiscountFilter>("all");
   const [publishedFilter, setPublishedFilter] = useState<PublishedFilter>("all");
@@ -164,7 +257,6 @@ export function ProductsAdmin() {
     Number(columns.price) +
     Number(columns.discount) +
     Number(columns.published) +
-    Number(columns.specialOffer) +
     Number(columns.dateAdded) +
     Number(columns.lastUpdated);
 
@@ -185,11 +277,6 @@ export function ProductsAdmin() {
         if (publishedFilter === "all") return true;
         return publishedFilter === "yes" ? row.published : !row.published;
       })
-      .filter((row) => {
-        if (specialOfferFilter === "all") return true;
-        const flagged = Boolean(row.specialOffer);
-        return specialOfferFilter === "yes" ? flagged : !flagged;
-      })
       .filter((row) => matchesDateFilter(row.createdAt, dateAddedFilter))
       .filter((row) => matchesDateFilter(row.updatedAt, lastUpdatedFilter))
       .filter(
@@ -208,7 +295,6 @@ export function ProductsAdmin() {
     priceFilter,
     publishedFilter,
     search,
-    specialOfferFilter,
   ]);
 
   function updateColumn(
@@ -221,7 +307,6 @@ export function ProductsAdmin() {
     if (key === "price") setPriceFilter("all");
     if (key === "discount") setDiscountFilter("all");
     if (key === "published") setPublishedFilter("all");
-    if (key === "specialOffer") setSpecialOfferFilter("all");
     if (key === "dateAdded") setDateAddedFilter("all");
     if (key === "lastUpdated") setLastUpdatedFilter("all");
   }
@@ -312,26 +397,6 @@ export function ProductsAdmin() {
           },
         ]
       : []),
-    ...(columns.specialOffer
-      ? [
-          {
-            label: "Special Offer",
-            filter: (
-              <ColumnFilter
-                label="Special offer"
-                value={specialOfferFilter}
-                onChange={(value) =>
-                  setSpecialOfferFilter(value as PublishedFilter)
-                }
-              >
-                <option value="all">All</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </ColumnFilter>
-            ),
-          },
-        ]
-      : []),
     ...(columns.dateAdded
       ? [
           {
@@ -387,7 +452,6 @@ export function ProductsAdmin() {
     priceFilter === "all" &&
     discountFilter === "all" &&
     publishedFilter === "all" &&
-    specialOfferFilter === "all" &&
     dateAddedFilter === "all" &&
     lastUpdatedFilter === "all";
 
@@ -498,43 +562,48 @@ export function ProductsAdmin() {
     setPublishPlan(null);
   }
 
-  function setSelectedSpecialOffer(value: boolean) {
-    if (selected.length === 0) return;
-    const products = data.products.filter((row) => selected.includes(row.id));
-    setSpecialOfferPlan({
-      published: value,
-      field: "specialOffer",
-      noun: "product",
-      items: products,
-      include: products
-        .filter((row) => Boolean(row.specialOffer) !== value)
-        .map((row) => row.id),
-    });
-  }
-
-  function confirmSpecialOffer() {
-    if (!specialOfferPlan) return;
-    const ids = specialOfferPlan.include;
-    if (ids.length === 0) {
-      setSpecialOfferPlan(null);
-      return;
-    }
-    patchProducts(ids, (row) => ({
-      ...row,
-      specialOffer: specialOfferPlan.published,
-    }));
-    setSpecialOfferPlan(null);
-  }
-
   if (draft) {
     const firearm = isFirearmCategory(categorySlug(draft.categoryId));
     const linkedOffers = data.offers.filter(
       (offer) => offer.productId === draft.id,
     ).length;
+    const takenSlugs = data.products
+      .filter((row) => row.id !== draft.id)
+      .map((row) => row.slug);
+    const errors = attempted
+      ? validateProductDraft({
+          name: draft.name,
+          slug: draft.slug,
+          categoryId: draft.categoryId,
+          summary: draft.summary,
+          imageUrl: draft.imageUrl,
+          price,
+          discount,
+          quantity: draft.quantity,
+          takenSlugs,
+        })
+      : {};
     return (
       <form
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
+          setAttempted(true);
+          const nextErrors = validateProductDraft({
+            name: draft.name,
+            slug: draft.slug,
+            categoryId: draft.categoryId,
+            summary: draft.summary,
+            imageUrl: draft.imageUrl,
+            price,
+            discount,
+            quantity: draft.quantity,
+            takenSlugs,
+          });
+          if (Object.keys(nextErrors).length) {
+            window.setTimeout(scrollToFirstInvalid, 0);
+            return;
+          }
           upsertProduct({
             ...draft,
             slug: slugify(draft.slug || draft.name),
@@ -551,17 +620,20 @@ export function ProductsAdmin() {
             stockNote: draft.stockNote?.trim() || null,
             updatedAt: new Date().toISOString(),
           });
+          setAttempted(false);
           setDraft(null);
           setIsNew(false);
         }}
       >
-        <h1 className="font-display text-4xl text-cream">
-          {isNew ? "New product" : "Edit product"}
-        </h1>
+        <AdminFormIntro
+          title={isNew ? "New product" : "Edit product"}
+          errors={errors}
+        />
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
-          <AdminField label="Name">
+          <AdminField label="Name" required error={errors.name}>
             <AdminInput
               required
+              invalid={Boolean(errors.name)}
               value={draft.name}
               onChange={(event) => {
                 const name = event.target.value;
@@ -573,22 +645,26 @@ export function ProductsAdmin() {
               }}
             />
           </AdminField>
-          <AdminField label="Slug">
+          <AdminField label="Slug" required error={errors.slug}>
             <AdminInput
               required
+              invalid={Boolean(errors.slug)}
               value={draft.slug}
               onChange={(event) =>
                 setDraft({ ...draft, slug: slugify(event.target.value) })
               }
             />
           </AdminField>
-          <AdminField label="Category">
+          <AdminField label="Category" required error={errors.categoryId}>
             <AdminSelect
+              required
+              invalid={Boolean(errors.categoryId)}
               value={draft.categoryId}
               onChange={(event) =>
                 setDraft({ ...draft, categoryId: event.target.value })
               }
             >
+              <option value="">Select a category</option>
               {data.categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -596,16 +672,11 @@ export function ProductsAdmin() {
               ))}
             </AdminSelect>
           </AdminField>
-          <AdminField label="Badge">
-            <AdminInput
-              value={draft.badge ?? ""}
-              onChange={(event) => setDraft({ ...draft, badge: event.target.value })}
-            />
-          </AdminField>
           <div className="lg:col-span-2">
-            <AdminField label="Summary">
+            <AdminField label="Summary" required error={errors.summary}>
               <AdminTextarea
                 required
+                invalid={Boolean(errors.summary)}
                 rows={4}
                 value={draft.summary}
                 onChange={(event) =>
@@ -615,8 +686,13 @@ export function ProductsAdmin() {
             </AdminField>
           </div>
           <div className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_14rem] lg:col-span-2">
-            <AdminField label="Image URL" hint="Leave empty for firearms lists">
+            <AdminField
+              label="Image URL"
+              hint="Leave empty for firearms lists"
+              error={errors.imageUrl}
+            >
               <AdminInput
+                invalid={Boolean(errors.imageUrl)}
                 value={draft.imageUrl ?? ""}
                 onChange={(event) =>
                   setDraft({ ...draft, imageUrl: event.target.value })
@@ -626,7 +702,7 @@ export function ProductsAdmin() {
             <AdminImagePreview src={draft.imageUrl} alt={draft.name} />
           </div>
           {firearm ? (
-            <AdminField label="Caliber" hint="Optional. .22 LR, .223, 12g">
+            <AdminField label="Caliber" hint=".22 LR, .223, 12g">
               <AdminInput
                 value={draft.caliber ?? ""}
                 onChange={(event) =>
@@ -635,9 +711,10 @@ export function ProductsAdmin() {
               />
             </AdminField>
           ) : null}
-          <AdminField label="Price (€)">
+          <AdminField label="Price (€)" error={errors.price}>
             <AdminInput
               inputMode="decimal"
+              invalid={Boolean(errors.price)}
               value={price}
               onChange={(event) => setPrice(event.target.value)}
             />
@@ -645,9 +722,11 @@ export function ProductsAdmin() {
           <AdminField
             label="Discount price (€)"
             hint="Leave empty when the item is not on sale"
+            error={errors.discount}
           >
             <AdminInput
               inputMode="decimal"
+              invalid={Boolean(errors.discount)}
               value={discount}
               onChange={(event) => setDiscount(event.target.value)}
             />
@@ -688,10 +767,11 @@ export function ProductsAdmin() {
               />
             </AdminField>
           ) : null}
-          <AdminField label="Quantity">
+          <AdminField label="Quantity" error={errors.quantity}>
             <AdminInput
               type="number"
               min={0}
+              invalid={Boolean(errors.quantity)}
               value={draft.quantity ?? ""}
               onChange={(event) =>
                 setDraft({
@@ -710,38 +790,12 @@ export function ProductsAdmin() {
               }
             />
           </AdminField>
-          <div className="lg:col-span-2">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-stone">
-              Brands
-            </p>
-            <div className="mt-2 grid max-h-48 grid-cols-1 gap-2 overflow-y-auto border border-line bg-ink p-3 sm:grid-cols-2 lg:grid-cols-3">
-              {data.brands
-                .slice()
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((brand) => (
-                  <AdminCheckbox
-                    key={brand.id}
-                    label={brand.name}
-                    checked={draft.brandIds.includes(brand.id)}
-                    onChange={(event) => {
-                      const brandIds = event.target.checked
-                        ? [...draft.brandIds, brand.id]
-                        : draft.brandIds.filter((id) => id !== brand.id);
-                      setDraft({ ...draft, brandIds });
-                    }}
-                  />
-                ))}
-            </div>
-          </div>
-          <AdminField label="Sort order">
-            <AdminInput
-              type="number"
-              value={draft.sortOrder}
-              onChange={(event) =>
-                setDraft({ ...draft, sortOrder: Number(event.target.value) || 0 })
-              }
-            />
-          </AdminField>
+          <ProductBrandPicker
+            key={draft.id}
+            brands={data.brands}
+            selectedIds={draft.brandIds}
+            onChange={(brandIds) => setDraft({ ...draft, brandIds })}
+          />
           <div className="flex flex-wrap items-end gap-6 pb-2">
             <AdminCheckbox
               label="Featured"
@@ -757,18 +811,12 @@ export function ProductsAdmin() {
                 setDraft({ ...draft, published: event.target.checked })
               }
             />
-            <AdminCheckbox
-              label="Special offer"
-              checked={draft.specialOffer}
-              onChange={(event) =>
-                setDraft({ ...draft, specialOffer: event.target.checked })
-              }
-            />
           </div>
         </div>
         <AdminFormActions
           onCancel={() => {
             setConfirmDelete(false);
+            setAttempted(false);
             setDraft(null);
             setIsNew(false);
           }}
@@ -812,6 +860,7 @@ export function ProductsAdmin() {
         addLabel="Add product"
         onAdd={() => {
           setIsNew(true);
+          setAttempted(false);
           setPrice("");
           setDiscount("");
           setDraft(
@@ -829,7 +878,6 @@ export function ProductsAdmin() {
             setPriceFilter("all");
             setDiscountFilter("all");
             setPublishedFilter("all");
-            setSpecialOfferFilter("all");
             setDateAddedFilter("all");
             setLastUpdatedFilter("all");
           }}
@@ -858,7 +906,6 @@ export function ProductsAdmin() {
                     ["price", "Price"],
                     ["discount", "Discount"],
                     ["published", "Published"],
-                    ["specialOffer", "Special Offer"],
                     ["dateAdded", "Date Added"],
                     ["lastUpdated", "Last Updated"],
                   ] as const
@@ -877,7 +924,7 @@ export function ProductsAdmin() {
           ) : null}
         </div>
       </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div className="border border-line bg-forest p-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-brass">
             Apply discount
@@ -977,38 +1024,6 @@ export function ProductsAdmin() {
             hidden.
           </p>
         </div>
-        <div className="border border-line bg-forest p-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-brass">
-            Set special offer
-          </p>
-          <p className="mt-3 text-sm text-parchment">
-            {selected.length === 0
-              ? "Select one or more products first."
-              : `${selected.length} selected product${selected.length === 1 ? "" : "s"}`}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={adminButton.primary}
-              disabled={selected.length === 0}
-              onClick={() => setSelectedSpecialOffer(true)}
-            >
-              Yes
-            </button>
-            <button
-              type="button"
-              className={adminButton.secondary}
-              disabled={selected.length === 0}
-              onClick={() => setSelectedSpecialOffer(false)}
-            >
-              No
-            </button>
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-stone">
-            Yes lists the product on the Special Offers page. No removes it from
-            that page.
-          </p>
-        </div>
       </div>
       {discountPlan ? (
         <DiscountConfirmModal
@@ -1028,16 +1043,6 @@ export function ProductsAdmin() {
           }
           onCancel={() => setPublishPlan(null)}
           onConfirm={confirmPublish}
-        />
-      ) : null}
-      {specialOfferPlan ? (
-        <PublishConfirmModal
-          plan={specialOfferPlan}
-          onChangeInclude={(include) =>
-            setSpecialOfferPlan({ ...specialOfferPlan, include })
-          }
-          onCancel={() => setSpecialOfferPlan(null)}
-          onConfirm={confirmSpecialOffer}
         />
       ) : null}
       <AdminTable headers={tableHeaders}>
@@ -1125,11 +1130,6 @@ export function ProductsAdmin() {
                   {row.published ? "Yes" : "No"}
                 </td>
               ) : null}
-              {columns.specialOffer ? (
-                <td className="px-2.5 py-2.5 text-parchment sm:px-3 lg:px-4 lg:py-3">
-                  {row.specialOffer ? "Yes" : "No"}
-                </td>
-              ) : null}
               {columns.dateAdded ? (
                 <td className="whitespace-nowrap px-2.5 py-2.5 text-parchment tabular-nums sm:px-3 lg:px-4 lg:py-3">
                   {formatAdminDate(row.createdAt)}
@@ -1146,6 +1146,7 @@ export function ProductsAdmin() {
                   className="text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
                   onClick={() => {
                     setIsNew(false);
+                    setAttempted(false);
                     setPrice(centsToInput(row.priceCents));
                     setDiscount(centsToInput(row.discountPriceCents));
                     setDraft(row);

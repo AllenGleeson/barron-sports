@@ -1,46 +1,129 @@
-const fieldClassName =
-  "mt-2 w-full border border-line bg-ink px-3 py-2.5 text-sm text-cream outline-none focus:border-brass";
+import type { FieldErrors } from "@/lib/admin/validation";
+
+function fieldClassName(invalid?: boolean) {
+  return `mt-2 w-full border bg-ink px-3 py-2.5 text-sm text-cream outline-none ${
+    invalid
+      ? "border-red-400/70 focus:border-red-300"
+      : "border-line focus:border-brass"
+  }`;
+}
 
 type FieldProps = {
   label: string;
   hint?: string;
+  required?: boolean;
+  error?: string;
   children: React.ReactNode;
 };
 
-export function AdminField({ label, hint, children }: FieldProps) {
+export function AdminField({
+  label,
+  hint,
+  required = false,
+  error,
+  children,
+}: FieldProps) {
   return (
-    <label className="block">
-      <span className="text-[11px] uppercase tracking-[0.2em] text-stone">
-        {label}
+    <label className="block" data-invalid={error ? "true" : undefined}>
+      <span className="flex items-baseline justify-between gap-3">
+        <span className="text-[11px] uppercase tracking-[0.2em] text-stone">
+          {label}
+        </span>
+        <span
+          className={`shrink-0 text-[10px] uppercase tracking-[0.16em] ${
+            required ? "text-brass" : "text-stone"
+          }`}
+        >
+          {required ? "Required" : "Optional"}
+        </span>
       </span>
       {children}
-      {hint ? <span className="mt-1 block text-xs text-stone">{hint}</span> : null}
+      {error ? (
+        <span role="alert" className="mt-1 block text-xs text-red-300">
+          {error}
+        </span>
+      ) : hint ? (
+        <span className="mt-1 block text-xs text-stone">{hint}</span>
+      ) : null}
     </label>
   );
 }
 
-export function AdminInput(
-  props: React.InputHTMLAttributes<HTMLInputElement>,
-) {
-  return <input {...props} className={`${fieldClassName} ${props.className ?? ""}`} />;
+export function AdminFormIntro({
+  title,
+  errors,
+}: {
+  title: string;
+  errors: FieldErrors;
+}) {
+  const messages = Object.values(errors);
+  return (
+    <>
+      <h1 className="font-display text-4xl text-cream">{title}</h1>
+      <p className="mt-2 text-sm text-parchment">
+        Fields marked required must be filled in. Optional fields can be left
+        blank.
+      </p>
+      {messages.length ? (
+        <div
+          role="alert"
+          className="mt-5 border border-red-400/40 bg-red-950/25 px-4 py-3 text-sm text-red-200"
+        >
+          <p className="font-medium text-red-100">
+            Please complete the required information before saving.
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {messages.map((message) => (
+              <li key={message}>{message}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
-export function AdminTextarea(
-  props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-) {
+type InvalidProp = { invalid?: boolean };
+
+export function AdminInput({
+  invalid,
+  className = "",
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & InvalidProp) {
   return (
-    <textarea
+    <input
       {...props}
-      className={`${fieldClassName} resize-y ${props.className ?? ""}`}
+      aria-invalid={invalid || undefined}
+      className={`${fieldClassName(invalid)} ${className}`}
     />
   );
 }
 
-export function AdminSelect(
-  props: React.SelectHTMLAttributes<HTMLSelectElement>,
-) {
+export function AdminTextarea({
+  invalid,
+  className = "",
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & InvalidProp) {
   return (
-    <select {...props} className={`${fieldClassName} ${props.className ?? ""}`} />
+    <textarea
+      {...props}
+      aria-invalid={invalid || undefined}
+      className={`${fieldClassName(invalid)} resize-y ${className}`}
+    />
+  );
+}
+
+export function AdminSelect({
+  invalid,
+  className = "",
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & InvalidProp) {
+  return (
+    <select
+      {...props}
+      aria-invalid={invalid || undefined}
+      className={`${fieldClassName(invalid)} ${className}`}
+    />
   );
 }
 

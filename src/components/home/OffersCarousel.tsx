@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { CompactOfferCard } from "@/components/cards/CompactOfferCard";
 import { CoverImage } from "@/components/media/CoverImage";
-import { featuredOffers, offerHref } from "@/lib/site";
+import { offerHref, type SpecialOffer } from "@/lib/site";
 
 const FADE_MS = 1600;
 const FADE_MS_MOBILE = 1000;
@@ -41,10 +41,9 @@ function Arrow({
   );
 }
 
-export function OffersCarousel() {
-  const offers = featuredOffers;
+export function OffersCarousel({ offers }: { offers: SpecialOffer[] }) {
   const total = offers.length;
-  const loopedOffers = [...offers, ...offers];
+  const loopedOffers = total > 0 ? [...offers, ...offers] : [];
   const carouselId = useId();
 
   const [index, setIndex] = useState(0);
@@ -61,7 +60,7 @@ export function OffersCarousel() {
   const fadeMsRef = useRef(fadeMs);
   fadeMsRef.current = fadeMs;
 
-  const active = ((index % total) + total) % total;
+  const active = total === 0 ? 0 : ((index % total) + total) % total;
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((id) => window.clearTimeout(id));

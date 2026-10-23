@@ -23,7 +23,7 @@ export function Logo({ className = "", priority = false, compact = false }: Logo
         }
       >
         <Image
-          src={assetPath("/logo.png")}
+          src={assetPath("/brand/logo.png")}
           alt=""
           width={656}
           height={201}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CoverImage } from "@/components/media/CoverImage";
-import { offerHref, type SpecialOffer } from "@/lib/site";
+import { offerHasViewLink, offerHref, type SpecialOffer } from "@/lib/site";
 
 export function OfferCard({ offer }: { offer: SpecialOffer }) {
   return (
@@ -26,9 +26,19 @@ export function OfferCard({ offer }: { offer: SpecialOffer }) {
         <h3 className="mt-2 font-display text-2xl leading-snug text-cream">
           {offer.title}
         </h3>
-        <ul className="mt-3 flex-1 space-y-1.5 text-sm leading-relaxed text-stone">
-          {offer.description.map((line) => (
-            <li key={line}>{line}</li>
+        {offer.summary ? (
+          <p className="mt-3 text-sm leading-relaxed text-parchment">{offer.summary}</p>
+        ) : null}
+        {offer.kind === "package" ? (
+          <p className="mt-4 text-[10px] uppercase tracking-[0.22em] text-brass">
+            Includes
+          </p>
+        ) : null}
+        <ul
+          className={`${offer.kind === "package" ? "mt-2" : "mt-3"} flex-1 space-y-1.5 text-sm leading-relaxed text-stone`}
+        >
+          {offer.description.map((line, index) => (
+            <li key={`${line}-${index}`}>{line}</li>
           ))}
         </ul>
         <p className="mt-5 flex items-baseline gap-3">
@@ -37,12 +47,14 @@ export function OfferCard({ offer }: { offer: SpecialOffer }) {
           ) : null}
           <span className="text-lg text-brass">{offer.price}</span>
         </p>
-        <Link
-          href={offerHref(offer)}
-          className="mt-6 inline-flex w-fit border border-line px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-cream transition-colors hover:border-brass hover:text-brass"
-        >
-          View Offer
-        </Link>
+        {offerHasViewLink(offer) ? (
+          <Link
+            href={offerHref(offer)}
+            className="mt-6 inline-flex w-fit border border-line px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-cream transition-colors hover:border-brass hover:text-brass"
+          >
+            View Offer
+          </Link>
+        ) : null}
       </div>
     </article>
   );

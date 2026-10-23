@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AdminCheckbox,
   AdminField,
+  AdminFormIntro,
   AdminInput,
   adminButton,
 } from "@/components/admin/fields";
@@ -32,6 +33,10 @@ import { assetPath } from "@/lib/assetPath";
 import type { AdminBrand } from "@/lib/admin/models";
 import { slugify } from "@/lib/admin/slug";
 import { newAdminId, useAdminStore } from "@/lib/admin/store";
+import {
+  scrollToFirstInvalid,
+  validateBrandDraft,
+} from "@/lib/admin/validation";
 
 function emptyBrand(sortOrder: number): AdminBrand {
   const now = new Date().toISOString();
@@ -54,8 +59,8 @@ export function BrandsAdmin() {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState<AdminBrand | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [aliasText, setAliasText] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [publishPlan, setPublishPlan] = useState<PublishPlan | null>(null);
   const [publishedFilter, setPublishedFilter] = useState<PublishedFilter>("all");
@@ -70,12 +75,7 @@ export function BrandsAdmin() {
       .filter((row) => matchesPublishedFilter(row.published, publishedFilter))
       .filter((row) => matchesDateFilter(row.createdAt, dateAddedFilter))
       .filter((row) => matchesDateFilter(row.updatedAt, lastUpdatedFilter))
-      .filter(
-        (row) =>
-          !q ||
-          row.name.toLowerCase().includes(q) ||
-          row.aliases.some((alias) => alias.includes(q)),
-      );
+      .filter((row) => !q || row.name.toLowerCase().includes(q));
   }, [
     data.brands,
     dateAddedFilter,
@@ -137,7 +137,6 @@ export function BrandsAdmin() {
   const tableHeaders: AdminTableHeader[] = [
     "Select",
     "Brand",
-    "Aliases",
     {
       label: "Published",
       filter: (
@@ -175,31 +174,56 @@ export function BrandsAdmin() {
       product.brandIds.includes(draft.id),
     ).length;
 
+    const takenSlugs = data.brands
+      .filter((row) => row.id !== draft.id)
+      .map((row) => row.slug);
+    const errors = attempted
+      ? validateBrandDraft({
+          name: draft.name,
+          slug: draft.slug,
+          logoUrl: draft.logoUrl,
+          websiteUrl: draft.websiteUrl,
+          takenSlugs,
+        })
+      : {};
+
     return (
       <form
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
+          setAttempted(true);
+          const nextErrors = validateBrandDraft({
+            name: draft.name,
+            slug: draft.slug,
+            logoUrl: draft.logoUrl,
+            websiteUrl: draft.websiteUrl,
+            takenSlugs,
+          });
+          if (Object.keys(nextErrors).length) {
+            window.setTimeout(scrollToFirstInvalid, 0);
+            return;
+          }
           upsertBrand({
             ...draft,
             slug: slugify(draft.slug || draft.name),
-            aliases: aliasText
-              .split(",")
-              .map((alias) => alias.trim().toLowerCase())
-              .filter(Boolean),
             websiteUrl: draft.websiteUrl?.trim() || null,
             updatedAt: new Date().toISOString(),
           });
+          setAttempted(false);
           setDraft(null);
           setIsNew(false);
         }}
       >
-        <h1 className="font-display text-4xl text-cream">
-          {isNew ? "New brand" : "Edit brand"}
-        </h1>
+        <AdminFormIntro
+          title={isNew ? "New brand" : "Edit brand"}
+          errors={errors}
+        />
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
-          <AdminField label="Name">
+          <AdminField label="Name" required error={errors.name}>
             <AdminInput
               required
+              invalid={Boolean(errors.name)}
               value={draft.name}
               onChange={(event) => {
                 const name = event.target.value;
@@ -211,9 +235,10 @@ export function BrandsAdmin() {
               }}
             />
           </AdminField>
-          <AdminField label="Slug">
+          <AdminField label="Slug" required error={errors.slug}>
             <AdminInput
               required
+              invalid={Boolean(errors.slug)}
               value={draft.slug}
               onChange={(event) =>
                 setDraft({ ...draft, slug: slugify(event.target.value) })
@@ -221,9 +246,10 @@ export function BrandsAdmin() {
             />
           </AdminField>
           <div className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_14rem] lg:col-span-2">
-            <AdminField label="Logo URL">
+            <AdminField label="Logo URL" required error={errors.logoUrl}>
               <AdminInput
                 required
+                invalid={Boolean(errors.logoUrl)}
                 value={draft.logoUrl}
                 onChange={(event) =>
                   setDraft({ ...draft, logoUrl: event.target.value })
@@ -237,26 +263,20 @@ export function BrandsAdmin() {
               emptyLabel="No logo"
             />
           </div>
-          <AdminField label="Website URL" hint="Optional">
+          <AdminField
+            label="Website URL"
+            hint="Full address, for example https://example.com"
+            error={errors.websiteUrl}
+          >
             <AdminInput
               type="url"
+              invalid={Boolean(errors.websiteUrl)}
               value={draft.websiteUrl ?? ""}
               onChange={(event) =>
                 setDraft({ ...draft, websiteUrl: event.target.value })
               }
             />
           </AdminField>
-          <div className="lg:col-span-2">
-            <AdminField
-              label="Aliases"
-              hint="Comma separated. Used to match stock names such as CZ or Ruger."
-            >
-              <AdminInput
-                value={aliasText}
-                onChange={(event) => setAliasText(event.target.value)}
-              />
-            </AdminField>
-          </div>
           <AdminField label="Sort order">
             <AdminInput
               type="number"
@@ -279,6 +299,7 @@ export function BrandsAdmin() {
         <AdminFormActions
           onCancel={() => {
             setConfirmDelete(false);
+            setAttempted(false);
             setDraft(null);
             setIsNew(false);
           }}
@@ -321,7 +342,7 @@ export function BrandsAdmin() {
         addLabel="Add brand"
         onAdd={() => {
           setIsNew(true);
-          setAliasText("");
+          setAttempted(false);
           setDraft(emptyBrand(data.brands.length));
         }}
       />
@@ -397,7 +418,7 @@ export function BrandsAdmin() {
             />
           </td>
           <td
-            colSpan={6}
+            colSpan={5}
             className="px-2.5 py-2.5 text-xs text-stone sm:px-3 lg:px-4 lg:py-3"
           >
             {selected.length} selected
@@ -430,9 +451,6 @@ export function BrandsAdmin() {
               </div>
             </td>
             <td className="px-2.5 py-2.5 text-parchment sm:px-3 lg:px-4 lg:py-3">
-              {row.aliases.length ? row.aliases.join(", ") : "—"}
-            </td>
-            <td className="px-2.5 py-2.5 text-parchment sm:px-3 lg:px-4 lg:py-3">
               {row.published ? "Yes" : "No"}
             </td>
             <td className="whitespace-nowrap px-2.5 py-2.5 text-parchment tabular-nums sm:px-3 lg:px-4 lg:py-3">
@@ -447,7 +465,7 @@ export function BrandsAdmin() {
                 className="text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
                 onClick={() => {
                   setIsNew(false);
-                  setAliasText(row.aliases.join(", "));
+                  setAttempted(false);
                   setDraft(row);
                 }}
               >

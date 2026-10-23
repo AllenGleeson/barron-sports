@@ -1,8 +1,18 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ProductCardList } from "@/components/cards/ProductCard";
-import { categories, type CatalogProduct, type Product } from "@/lib/site";
+import { OffersComingSoon } from "@/components/offers/OffersComingSoon";
+import { usePublishedOfferTitles } from "@/lib/admin/usePublicOffers";
+import {
+  categories,
+  isSpecialOfferProduct,
+  type CatalogProduct,
+  type Product,
+} from "@/lib/site";
+
+const SPECIAL_OFFERS_FILTER = "special-offers";
+const PAGE_SIZE = 12;
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
 
@@ -78,6 +88,79 @@ function FilterSelect({
   );
 }
 
+function visiblePages(current: number, total: number) {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }
+  const start = Math.max(1, Math.min(current - 2, total - 4));
+  const end = Math.min(total, start + 4);
+  const pages: number[] = [];
+  if (start > 1) pages.push(1);
+  if (start > 2) pages.push(0);
+  for (let page = start; page <= end; page += 1) pages.push(page);
+  if (end < total - 1) pages.push(0);
+  if (end < total) pages.push(total);
+  return pages;
+}
+
+function Pagination({
+  page,
+  pageCount,
+  onPage,
+}: {
+  page: number;
+  pageCount: number;
+  onPage: (page: number) => void;
+}) {
+  return (
+    <nav
+      className="mt-8 flex flex-wrap items-center justify-between gap-3"
+      aria-label="Product pages"
+    >
+      <button
+        type="button"
+        className="border border-cream/35 px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-cream hover:border-brass hover:text-brass disabled:opacity-40"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+      >
+        Previous
+      </button>
+      <ul className="flex flex-wrap items-center gap-1">
+        {visiblePages(page, pageCount).map((item, index) =>
+          item === 0 ? (
+            <li key={`ellipsis-${index}`} className="px-2 text-stone" aria-hidden="true">
+              …
+            </li>
+          ) : (
+            <li key={item}>
+              <button
+                type="button"
+                aria-current={item === page ? "page" : undefined}
+                className={`min-w-10 px-3 py-2.5 text-[11px] uppercase tracking-[0.18em] ${
+                  item === page
+                    ? "bg-brass text-ink"
+                    : "border border-line text-parchment hover:border-brass hover:text-brass"
+                }`}
+                onClick={() => onPage(item)}
+              >
+                {item}
+              </button>
+            </li>
+          ),
+        )}
+      </ul>
+      <button
+        type="button"
+        className="border border-cream/35 px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-cream hover:border-brass hover:text-brass disabled:opacity-40"
+        disabled={page >= pageCount}
+        onClick={() => onPage(page + 1)}
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
+
 export function ProductSearch({
   products,
   showCategory = false,
@@ -92,7 +175,20 @@ export function ProductSearch({
   const [condition, setCondition] = useState("");
   const [brand, setBrand] = useState("");
   const [sort, setSort] = useState<SortKey>("featured");
+  const [page, setPage] = useState(1);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const publishedOfferTitles = usePublishedOfferTitles();
   const needle = query.trim().toLowerCase();
+  const viewingSpecialOffers = category === SPECIAL_OFFERS_FILTER;
+  const noPublishedOffers =
+    publishedOfferTitles !== null && publishedOfferTitles.length === 0;
+
+  function isActiveSpecialOffer(product: Product) {
+    if (publishedOfferTitles) {
+      return publishedOfferTitles.includes(product.name.toLowerCase());
+    }
+    return isSpecialOfferProduct(product);
+  }
 
   const brandOptions = useMemo(() => {
     const names = new Set<string>();
@@ -127,6 +223,9 @@ export function ProductSearch({
       if (needle && !matchesQuery(product, needle, categoryName)) return false;
       if (brand && !productBrands(product).includes(brand)) return false;
       if (condition && !product.featured && product.badge !== condition) return false;
+      if (category === SPECIAL_OFFERS_FILTER) {
+        return isActiveSpecialOffer(product);
+      }
       if (
         category &&
         (!("categorySlug" in product) || product.categorySlug !== category)
@@ -155,7 +254,24 @@ export function ProductSearch({
     const featured = sorted.filter((product) => product.featured);
     const rest = sorted.filter((product) => !product.featured);
     return [...featured, ...rest];
-  }, [brand, category, condition, needle, products, sort]);
+  }, [brand, category, condition, needle, products, publishedOfferTitles, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = results.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [brand, category, condition, needle, sort]);
+
+  function goToPage(next: number) {
+    const clamped = Math.min(Math.max(1, next), pageCount);
+    setPage(clamped);
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return (
     <div>
@@ -176,14 +292,28 @@ export function ProductSearch({
           }`}
         >
           <span className="text-[11px] uppercase tracking-[0.2em] text-stone">Search products</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, brand or type"
-            autoComplete="off"
-            className="subject-search mt-2 w-full border border-line bg-ink px-3 py-3 text-cream outline-none focus:border-brass"
-          />
+          <span className="relative mt-2 block">
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Name, brand or type"
+              autoComplete="off"
+              className="subject-search w-full border border-line bg-ink px-3 py-3 pr-10 text-cream outline-none focus:border-brass"
+            />
+            {query ? (
+              <button
+                type="button"
+                aria-label="Clear search"
+                className="absolute inset-y-0 right-1 z-10 flex cursor-pointer items-center px-2 text-brass hover:text-cream"
+                onClick={() => setQuery("")}
+              >
+                <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" aria-hidden="true">
+                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.3" />
+                </svg>
+              </button>
+            ) : null}
+          </span>
         </label>
         {showCategoryFilter ? (
           <FilterSelect
@@ -193,6 +323,7 @@ export function ProductSearch({
             onChange={setCategory}
           >
             <option value="">All categories</option>
+            <option value={SPECIAL_OFFERS_FILTER}>Special Offers</option>
             {categoryOptions.map((item) => (
               <option key={item.slug} value={item.slug}>
                 {item.name}
@@ -236,14 +367,29 @@ export function ProductSearch({
           ))}
         </FilterSelect>
       </div>
-      <div className="mt-8">
-        {results.length > 0 ? (
-          <ProductCardList
-            products={results}
-            showCategory={showCategory}
-            showImage={showImage}
-            layout={showImage ? "grid" : "list"}
-          />
+      <div className="mt-8" ref={resultsRef}>
+        {viewingSpecialOffers && noPublishedOffers ? (
+          <OffersComingSoon />
+        ) : results.length > 0 ? (
+          <>
+            <p className="mb-5 text-sm text-stone">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+              {Math.min(currentPage * PAGE_SIZE, results.length)} of {results.length}
+            </p>
+            <ProductCardList
+              products={pageItems}
+              showCategory={showCategory}
+              showImage={showImage}
+              layout={showImage ? "grid" : "list"}
+            />
+            {pageCount > 1 ? (
+              <Pagination
+                page={currentPage}
+                pageCount={pageCount}
+                onPage={goToPage}
+              />
+            ) : null}
+          </>
         ) : (
           <p className="text-parchment">No products match that search.</p>
         )}

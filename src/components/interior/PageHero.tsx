@@ -7,9 +7,17 @@ type PageHeroProps = {
   description?: string;
   image: { src: string; alt: string };
   compact?: boolean;
+  actions?: React.ReactNode;
 };
 
-export function PageHero({ eyebrow, title, description, image, compact = false }: PageHeroProps) {
+export function PageHero({
+  eyebrow,
+  title,
+  description,
+  image,
+  compact = false,
+  actions,
+}: PageHeroProps) {
   return (
     <section className={`relative isolate overflow-hidden ${compact ? "min-h-[32vh]" : "min-h-[42vh]"}`}>
       <CoverImage src={image.src} alt={image.alt} priority sizes="100vw" />
@@ -31,6 +39,7 @@ export function PageHero({ eyebrow, title, description, image, compact = false }
               {description}
             </p>
           ) : null}
+          {actions ? <div className="mt-6">{actions}</div> : null}
         </div>
       </Container>
     </section>

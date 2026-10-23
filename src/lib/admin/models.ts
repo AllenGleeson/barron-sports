@@ -67,11 +67,17 @@ export type AdminProduct = {
   updatedAt: string;
 };
 
+export type AdminOfferKind = "offer" | "package";
+
 export type AdminOffer = {
   id: string;
+  kind: AdminOfferKind;
   title: string;
+  description: string;
   productId: string | null;
+  productIds: string[];
   categoryId: string | null;
+  categoryLabel: string;
   imageUrl: string;
   highlights: string[];
   priceCents: number | null;
@@ -85,6 +91,24 @@ export type AdminOffer = {
   createdAt: string;
   updatedAt: string;
 };
+
+export function isPackageOffer(offer: Pick<AdminOffer, "kind">) {
+  return offer.kind === "package";
+}
+
+export function normalizeAdminOffer(offer: AdminOffer): AdminOffer {
+  const productIds = Array.isArray(offer.productIds)
+    ? offer.productIds.filter(Boolean)
+    : [];
+  const fromSingle =
+    productIds.length === 0 && offer.productId ? [offer.productId] : productIds;
+  return {
+    ...offer,
+    kind: offer.kind === "package" ? "package" : "offer",
+    description: offer.description ?? "",
+    productIds: fromSingle,
+  };
+}
 
 export type AdminStoreData = {
   version: typeof ADMIN_STORE_VERSION;

@@ -10,13 +10,16 @@ import {
 } from "react";
 import {
   ADMIN_STORE_VERSION,
+  normalizeAdminOffer,
   type AdminBrand,
   type AdminOffer,
   type AdminProduct,
   type AdminService,
   type AdminStoreData,
 } from "@/lib/admin/models";
+import { isCatalogOnlyOffer } from "@/lib/admin/productOffer";
 import { createSeedStore, mergeSpecialOfferProducts } from "@/lib/admin/seed";
+import { SPECIAL_OFFERS } from "@/lib/site";
 
 const STORAGE_KEY = "barron-admin-v1";
 
@@ -42,6 +45,10 @@ type AdminStoreContextValue = {
     mutate: (row: AdminService) => AdminService,
   ) => void;
   upsertOffer: (row: AdminOffer) => void;
+  patchOffers: (
+    ids: string[],
+    mutate: (row: AdminOffer) => AdminOffer,
+  ) => void;
   remove: (collection: Collection, id: string) => void;
 };
 
@@ -68,6 +75,22 @@ function readStore(): AdminStoreData {
         ...product,
         specialOffer: Boolean(product.specialOffer),
       })),
+      offers: parsed.offers
+        .filter((offer) => !isCatalogOnlyOffer(offer))
+        .map((offer) => {
+          const seeded = SPECIAL_OFFERS.find(
+            (row) => row.id === offer.id || row.title === offer.title,
+          );
+          return normalizeAdminOffer({
+            ...offer,
+            categoryLabel:
+              offer.categoryLabel ||
+              seeded?.category ||
+              parsed.categories.find((category) => category.id === offer.categoryId)
+                ?.name ||
+              "",
+          });
+        }),
     });
   } catch {
     return createSeedStore();
@@ -159,7 +182,18 @@ export function AdminStoreProvider({ children }: { children: React.ReactNode }) 
           ),
         });
       },
-      upsertOffer: (row) => persist({ ...data, offers: replace(data.offers, row) }),
+      upsertOffer: (row) =>
+        persist({ ...data, offers: replace(data.offers, normalizeAdminOffer(row)) }),
+      patchOffers: (ids, mutate) => {
+        const idSet = new Set(ids);
+        const now = new Date().toISOString();
+        persist({
+          ...data,
+          offers: data.offers.map((row) =>
+            idSet.has(row.id) ? { ...mutate(row), updatedAt: now } : row,
+          ),
+        });
+      },
       remove: (collection, id) =>
         persist({
           ...data,

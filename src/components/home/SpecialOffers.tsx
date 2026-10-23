@@ -1,8 +1,17 @@
+"use client";
+
 import { OffersCarousel } from "@/components/home/OffersCarousel";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { usePublicOffers } from "@/lib/admin/usePublicOffers";
+import { featuredOffers } from "@/lib/site";
 
 export function SpecialOffers() {
+  const fromStore = usePublicOffers(featuredOffers);
+  const offers = fromStore ?? featuredOffers;
+
+  if (fromStore !== null && offers.length === 0) return null;
+
   return (
     <section className="bg-ink py-8 lg:py-10" aria-labelledby="offers-heading">
       <Container>
@@ -12,7 +21,7 @@ export function SpecialOffers() {
         >
           Special Offers
         </h2>
-        <OffersCarousel />
+        <OffersCarousel offers={offers} />
         <div className="mt-6 flex justify-center lg:mt-8">
           <Button href="/special-offers" variant="ghost">
             View All Special Offers

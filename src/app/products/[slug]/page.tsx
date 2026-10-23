@@ -48,16 +48,24 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const catalog = categoryCatalogs[category.slug];
   const richCatalog = category.slug === "dogtrace" || catalog;
+  const hero = (
+    <PageHero
+      eyebrow="Products"
+      title={category.name}
+      description={category.description}
+      image={category.image}
+      actions={
+        <Button href="/products" variant="secondary">
+          Back to all products
+        </Button>
+      }
+    />
+  );
 
   if (richCatalog) {
     return (
       <>
-        <PageHero
-          eyebrow="Products"
-          title={category.name}
-          description={category.description}
-          image={category.image}
-        />
+        {hero}
         {catalog ? <CategoryCatalog catalog={catalog} /> : <DogTraceCatalog />}
       </>
     );
@@ -65,12 +73,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
   return (
     <>
-      <PageHero
-        eyebrow="Products"
-        title={category.name}
-        description={category.description}
-        image={category.image}
-      />
+      {hero}
       <section className="bg-ink py-8 lg:py-10">
         <Container>
           <div className={listLayout ? "lg:px-8 xl:px-16" : undefined}>

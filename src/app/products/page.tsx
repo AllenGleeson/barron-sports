@@ -21,7 +21,7 @@ export default function ProductsIndexPage() {
         title="Products"
         description="Rifles, shotguns, DogTrace systems, night vision, flashlights and accessories from the shop in Ennis."
         image={{
-          src: "/c02b5778-328b-4785-a803-92733866897c.jpg",
+          src: "/home/shop-background.jpg",
           alt: "Inside Barron Sports in Ennis, with glass cabinets of shooting equipment and outdoor clothing",
         }}
       />

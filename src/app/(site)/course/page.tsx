@@ -20,10 +20,7 @@ export default function CoursePage() {
         eyebrow="Ennis, Co. Clare"
         title="Firearms safety course"
         description="A firearms safety course for people who want to handle a gun properly — in the shop, on the range, and in the field."
-        image={{
-          src: "/course/course-hero.jpg",
-          alt: "Hunting rifle and shotgun on an outdoor shooting bench at dusk",
-        }}
+        image={firearmsCourse.image}
       />
       <section className="bg-ink py-10 lg:py-16">
         <Container>
@@ -34,16 +31,15 @@ export default function CoursePage() {
             <p className="mt-6 text-base leading-relaxed text-parchment">
               Barron Sports is a firearms retailer, not a shortcut around the
               law. If you are applying for a first certificate, coming back to
-              shooting, or hunting deer in Ireland, this safety course is the
-              place to start — not a conversation over the counter and a box of
-              ammunition.
+              shooting, this safety course is the place to start — not a
+              conversation over the counter and a box of ammunition.
             </p>
             <p className="mt-4 text-base leading-relaxed text-parchment">
               The course covers the habits that keep people, dogs and livestock
-              safe: muzzle control, when the action is open, how a gun is stored
-              at home, how it travels in a vehicle, and when you simply do not
-              take the shot. Ask in the shop if you have a question about dates
-              or the application.
+              safe: muzzle control, when to keep the action open, how a gun is
+              stored at home, how it travels in a vehicle, and when you simply
+              do not take the shot. Ask in the shop if you have a question about
+              course dates or the application process.
             </p>
           </div>
 

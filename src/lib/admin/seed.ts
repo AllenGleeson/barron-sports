@@ -22,7 +22,6 @@ import { uniqueSlug } from "@/lib/admin/slug";
 
 const OFFER_CATEGORY_SLUGS: Record<string, string> = {
   Rifles: "rifles",
-  DogTrace: "dogtrace",
   Scopes: "accessories",
   "Clay Traps": "accessories",
   "Ear Protection": "accessories",
@@ -94,7 +93,6 @@ const OFFER_PRODUCT_ALIASES: Record<string, string[]> = {
 
 const OFFER_BRAND_HINTS: Record<string, string[]> = {
   "Howa 1500": ["Howa"],
-  "GPS Dog Tracking Systems": ["DogTrace"],
   "Champion Clay Trap - Workhorse": ["Champion"],
   "Impact Electronic Ear Muffs": ["Howard Leight by Honeywell"],
   "Pard Thermal Image Spotters": ["Pard"],
@@ -226,7 +224,9 @@ export function createSeedStore(): AdminStoreData {
     };
   });
 
-  const offerRows: AdminOffer[] = SPECIAL_OFFERS.map((offer, index) => {
+  const offerRows: AdminOffer[] = SPECIAL_OFFERS.filter(
+    (offer) => offer.id !== "dogtrace-gps",
+  ).map((offer, index) => {
     const categorySlug = OFFER_CATEGORY_SLUGS[offer.category];
     const category = categorySlug
       ? categoryRows.find((row) => row.slug === categorySlug)
@@ -240,9 +240,13 @@ export function createSeedStore(): AdminStoreData {
 
     return {
       id: offer.id,
+      kind: "offer",
       title: offer.title,
+      description: "",
       productId: matchedProduct?.id ?? null,
+      productIds: matchedProduct ? [matchedProduct.id] : [],
       categoryId: category?.id ?? null,
+      categoryLabel: offer.category,
       imageUrl: offer.image,
       highlights: offer.description,
       priceCents: sale.cents,

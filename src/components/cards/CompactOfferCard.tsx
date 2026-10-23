@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CoverImage } from "@/components/media/CoverImage";
-import { offerHref, type SpecialOffer } from "@/lib/site";
+import { offerHasViewLink, offerHref, type SpecialOffer } from "@/lib/site";
 
 export function CompactOfferCard({ offer }: { offer: SpecialOffer }) {
   return (
@@ -35,12 +35,14 @@ export function CompactOfferCard({ offer }: { offer: SpecialOffer }) {
           <span className="text-cream">{offer.price}</span>
         )}
       </p>
-      <Link
-        href={offerHref(offer)}
-        className="mx-auto mt-auto pt-4 inline-flex min-w-[10.5rem] items-center justify-center bg-brass px-8 py-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-ink transition-colors hover:bg-[#dcc392]"
-      >
-        View Offer
-      </Link>
+      {offerHasViewLink(offer) ? (
+        <Link
+          href={offerHref(offer)}
+          className="mx-auto mt-auto pt-4 inline-flex min-w-[10.5rem] items-center justify-center bg-brass px-8 py-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-ink transition-colors hover:bg-[#dcc392]"
+        >
+          View Offer
+        </Link>
+      ) : null}
     </article>
   );
 }

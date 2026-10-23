@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AdminField,
+  AdminFormIntro,
   AdminInput,
   AdminTextarea,
   AdminCheckbox,
@@ -33,6 +34,10 @@ import { assetPath } from "@/lib/assetPath";
 import type { AdminService } from "@/lib/admin/models";
 import { slugify } from "@/lib/admin/slug";
 import { newAdminId, useAdminStore } from "@/lib/admin/store";
+import {
+  scrollToFirstInvalid,
+  validateServiceDraft,
+} from "@/lib/admin/validation";
 
 function emptyService(sortOrder: number): AdminService {
   const now = new Date().toISOString();
@@ -56,6 +61,7 @@ export function ServicesAdmin() {
   const [draft, setDraft] = useState<AdminService | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [publishPlan, setPublishPlan] = useState<PublishPlan | null>(null);
   const [publishedFilter, setPublishedFilter] = useState<PublishedFilter>("all");
@@ -174,26 +180,56 @@ export function ServicesAdmin() {
   ];
 
   if (draft) {
+    const takenSlugs = data.services
+      .filter((row) => row.id !== draft.id)
+      .map((row) => row.slug);
+    const errors = attempted
+      ? validateServiceDraft({
+          title: draft.title,
+          slug: draft.slug,
+          description: draft.description,
+          imageUrl: draft.imageUrl,
+          imageAlt: draft.imageAlt,
+          takenSlugs,
+        })
+      : {};
     return (
       <form
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
+          setAttempted(true);
+          const nextErrors = validateServiceDraft({
+            title: draft.title,
+            slug: draft.slug,
+            description: draft.description,
+            imageUrl: draft.imageUrl,
+            imageAlt: draft.imageAlt,
+            takenSlugs,
+          });
+          if (Object.keys(nextErrors).length) {
+            window.setTimeout(scrollToFirstInvalid, 0);
+            return;
+          }
           upsertService({
             ...draft,
             slug: slugify(draft.slug || draft.title),
             updatedAt: new Date().toISOString(),
           });
+          setAttempted(false);
           setDraft(null);
           setIsNew(false);
         }}
       >
-        <h1 className="font-display text-4xl text-cream">
-          {isNew ? "New service" : "Edit service"}
-        </h1>
+        <AdminFormIntro
+          title={isNew ? "New service" : "Edit service"}
+          errors={errors}
+        />
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
-          <AdminField label="Title">
+          <AdminField label="Title" required error={errors.title}>
             <AdminInput
               required
+              invalid={Boolean(errors.title)}
               value={draft.title}
               onChange={(event) => {
                 const title = event.target.value;
@@ -205,9 +241,10 @@ export function ServicesAdmin() {
               }}
             />
           </AdminField>
-          <AdminField label="Slug">
+          <AdminField label="Slug" required error={errors.slug}>
             <AdminInput
               required
+              invalid={Boolean(errors.slug)}
               value={draft.slug}
               onChange={(event) =>
                 setDraft({ ...draft, slug: slugify(event.target.value) })
@@ -215,9 +252,10 @@ export function ServicesAdmin() {
             />
           </AdminField>
           <div className="lg:col-span-2">
-            <AdminField label="Description">
+            <AdminField label="Description" required error={errors.description}>
               <AdminTextarea
                 required
+                invalid={Boolean(errors.description)}
                 rows={5}
                 value={draft.description}
                 onChange={(event) =>
@@ -227,9 +265,10 @@ export function ServicesAdmin() {
             </AdminField>
           </div>
           <div className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_14rem] lg:col-span-2">
-            <AdminField label="Image URL">
+            <AdminField label="Image URL" required error={errors.imageUrl}>
               <AdminInput
                 required
+                invalid={Boolean(errors.imageUrl)}
                 value={draft.imageUrl}
                 onChange={(event) =>
                   setDraft({ ...draft, imageUrl: event.target.value })
@@ -238,9 +277,10 @@ export function ServicesAdmin() {
             </AdminField>
             <AdminImagePreview src={draft.imageUrl} alt={draft.imageAlt || draft.title} />
           </div>
-          <AdminField label="Image alt text">
+          <AdminField label="Image alt text" required error={errors.imageAlt}>
             <AdminInput
               required
+              invalid={Boolean(errors.imageAlt)}
               value={draft.imageAlt}
               onChange={(event) =>
                 setDraft({ ...draft, imageAlt: event.target.value })
@@ -269,6 +309,7 @@ export function ServicesAdmin() {
         <AdminFormActions
           onCancel={() => {
             setConfirmDelete(false);
+            setAttempted(false);
             setDraft(null);
             setIsNew(false);
           }}
@@ -305,6 +346,7 @@ export function ServicesAdmin() {
         addLabel="Add service"
         onAdd={() => {
           setIsNew(true);
+          setAttempted(false);
           setDraft(emptyService(data.services.length));
         }}
       />
@@ -430,6 +472,7 @@ export function ServicesAdmin() {
                 className="text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
                 onClick={() => {
                   setIsNew(false);
+                  setAttempted(false);
                   setDraft(row);
                 }}
               >

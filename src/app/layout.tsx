@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   },
   description: site.description,
   icons: {
-    icon: [{ url: "/mini-logo.PNG", type: "image/png" }],
-    apple: "/mini-logo.PNG",
+    icon: [{ url: "/brand/mini-logo.PNG", type: "image/png" }],
+    apple: "/brand/mini-logo.PNG",
   },
 };
 

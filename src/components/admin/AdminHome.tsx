@@ -9,6 +9,7 @@ export function AdminHome() {
   const cards = [
     { href: "/admin/services/", label: "Services", count: data.services.length },
     { href: "/admin/products/", label: "Products", count: data.products.length },
+    { href: "/admin/offers/", label: "Offers", count: data.offers.length },
     { href: "/admin/brands/", label: "Brands", count: data.brands.length },
   ];
 
@@ -19,7 +20,7 @@ export function AdminHome() {
         Edit shop records in this browser. Changes are saved locally and do not
         publish to the live pages until a database is connected.
       </p>
-      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((card) => (
           <Link
             key={card.href}

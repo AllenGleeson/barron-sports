@@ -1,25 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { OfferCard } from "@/components/cards/OfferCard";
-import { specialOfferProductsFromStore } from "@/lib/admin/productOffer";
-import { readAdminStoreData } from "@/lib/admin/store";
+import { OffersComingSoon } from "@/components/offers/OffersComingSoon";
+import { usePublicOffers } from "@/lib/admin/usePublicOffers";
 import type { SpecialOffer } from "@/lib/site";
 
 export function SpecialOffersGrid({ offers }: { offers: SpecialOffer[] }) {
-  const [fromProducts, setFromProducts] = useState<SpecialOffer[]>([]);
+  const fromStore = usePublicOffers(offers);
+  const rows = fromStore ?? offers;
 
-  useEffect(() => {
-    const store = readAdminStoreData();
-    if (!store) return;
-    setFromProducts(specialOfferProductsFromStore(store));
-  }, []);
-
-  const existing = new Set(offers.map((offer) => offer.title.toLowerCase()));
-  const extra = fromProducts.filter(
-    (offer) => !existing.has(offer.title.toLowerCase()),
-  );
-  const rows = [...offers, ...extra];
+  if (fromStore !== null && rows.length === 0) {
+    return <OffersComingSoon />;
+  }
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
