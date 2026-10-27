@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { lockAdmin } from "@/lib/admin/auth";
+import { signOutAdmin, useAdminAuth } from "@/lib/admin/auth";
 import { adminButton } from "@/components/admin/fields";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
@@ -21,6 +21,7 @@ function isActive(pathname: string, href: string) {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const auth = useAdminAuth();
 
   return (
     <div className="min-h-dvh bg-ink">
@@ -50,15 +51,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {auth.status === "signed-in" ? (
+              <span className="text-xs text-stone">{auth.email}</span>
+            ) : null}
             <Link href="/" className={adminButton.ghost}>
               View site
             </Link>
             <button
               type="button"
               className={adminButton.secondary}
-              onClick={() => {
-                lockAdmin();
+              onClick={async () => {
+                await signOutAdmin();
                 router.push("/admin");
               }}
             >

@@ -23,7 +23,8 @@ Website for Barron Sports, a shooting and outdoor equipment shop in Ennis, Co. C
 ## Hosting (read before adding features)
 
 - Deployed on **Vercel** from GitHub: every push to `main` deploys production, other branches get preview URLs. No `vercel.json`; Vercel detects Next.js. Setup steps are in `README.md`.
-- Environment variables live in the Vercel project settings (locally in `.env.local`); env files are gitignored. Currently only `NEXT_PUBLIC_ADMIN_PASSWORD` is used. `NEXT_PUBLIC_` values are public (built into the browser bundle); server secrets must not use that prefix. Changing a variable needs a redeploy.
+- Environment variables live in the Vercel project settings (locally in `.env.local`); env files are gitignored. The site uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; the Supabase integration also adds `SUPABASE_SECRET_KEY` (server only) and Postgres connection strings. `NEXT_PUBLIC_` values are public (built into the browser bundle); server secrets must not use that prefix. Changing a variable needs a redeploy.
+- **Supabase** (project `supabase-barron-sports`, Dublin) was added through the Vercel Marketplace, which manages its keys in Vercel. Vercel Functions run in `dub1`, next to the database. Use the publishable/secret keys, not the legacy anon/service-role ones.
 - All pages are currently static (prerendered at build time). Server features (Route Handlers, Server Actions, `proxy`/middleware) are now possible but none exist yet; they're planned for the Supabase and Stripe work. `products/[slug]` uses `generateStaticParams` with `dynamicParams = false`, so unknown slugs 404.
 - Images are `unoptimized` because admin users can enter any image URL. `images.remotePatterns` still lists the known hosts; add new ones there.
 - `trailingSlash: true`: URLs end in `/` (Next redirects the bare form). Internal `href`s are written without the slash (`/products/dogtrace`).
@@ -35,7 +36,8 @@ Website for Barron Sports, a shooting and outdoor equipment shop in Ennis, Co. C
 - `src/app/admin/` — admin area (products, services, brands), wrapped in `AdminApp`, `noindex`. Special offers and packages are managed on the products page (`?view=offers` / `?view=packages`).
 - `src/components/` — grouped by area: `admin`, `home`, `products`, `course`, `cards`, `layout`, `ui`, etc.
 - `src/lib/site.ts` — the content entry point. Holds shop details, nav, services and `pageImages`, and re-exports everything in `src/lib/content/` (categories, offers, brands, products, catalogues, course). Always import content from `@/lib/site`; edit it in the matching `content/` file. Most copy changes happen here.
-- `src/lib/admin/` — admin data model, store, validation, seed data.
+- `src/lib/admin/` — admin data model, store, validation, seed data, sign-in.
+- `src/lib/supabase/` — Supabase clients.
 - `src/lib/course/` — firearms safety course: curriculum, progress, certificate, enrolment.
 - `public/` — images by section (`brand/`, `categories/`, `products/`, `offers/`, ...).
 - `documents/` — local working files (stock spreadsheet etc.), gitignored.
@@ -47,7 +49,7 @@ Import alias: `@/*` → `src/*`.
 There is no backend. Everything dynamic lives in the browser:
 
 - **Admin** is a client-only CMS. `AdminStoreProvider` (`src/lib/admin/store.tsx`) seeds from `src/lib/site.ts` via `seed.ts` and persists to `localStorage` key `barron-admin-v1`. Bump `ADMIN_STORE_VERSION` in `models.ts` when the stored shape changes (old data is then discarded and reseeded).
-- Admin "auth" is a password check stored in `sessionStorage` (`NEXT_PUBLIC_ADMIN_PASSWORD`, default `barron`). It's a convenience gate, not security — the password ships in the JS bundle.
+- **Admin sign-in** uses Supabase Auth (email + password) via `src/lib/admin/auth.ts`. An account is an admin when its `app_metadata.role` is `"admin"`; only SQL or the secret key can set that. `AdminGate` hides the admin UI from everyone else, but that's UI only: database access rules (RLS) must check the same role. The browser client is `getSupabaseBrowser()` in `src/lib/supabase/client.ts` (cookie sessions via `@supabase/ssr`, so server code can read them later). It returns null when the env vars are missing.
 - Public pages render the static data from `site.ts`, then hooks like `usePublicOffers` / `usePublicServices` overlay admin edits from the same browser's `localStorage`. Only **special offers and services** are overlaid; admin edits to products, brands and categories don't change public pages yet. Admin edits are **not** visible to other visitors; to change the live site, edit the content files and redeploy.
 - **Course enrolment** (`src/lib/course/enrolment.ts`) is a preview that mimics a planned Stripe Checkout + Supabase flow using `localStorage` only. Stripe/Supabase environment variables will be added with that work.
 - The contact form does not send anything to a server.
