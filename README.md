@@ -27,6 +27,7 @@ Other commands:
 | `npm run lint` | ESLint (there is no test suite) |
 | `npm run build` | Production build, the same one Vercel runs |
 | `npm run preview` | Production build, then serve it on http://localhost:3000 |
+| `npm run db:seed` | Add the built-in site content to the Supabase database (only adds missing rows; needs `SUPABASE_SECRET_KEY` in `.env.local`) |
 | `npm run import-stock` | Regenerate `src/data/firearm-stock.ts` from `documents/products/Stock.xlsx` (needs Python 3) |
 
 ## Deploy on Vercel
@@ -47,8 +48,15 @@ After that:
 ## How content and admin work today
 
 - Site content (products, offers, brands, services, course guides) lives in `src/lib/site.ts` and `src/lib/content/`. Changing it and pushing to `main` updates the live site.
-- `/admin` requires signing in with a Supabase account that has the admin role (see below). Its data is still saved in the browser it's used in (`localStorage`), so edits aren't visible to other visitors yet; moving that data to the Supabase database is the next step.
+- `/admin` requires signing in with a Supabase account that has the admin role (see below). It saves to the Supabase database: special offers, packages and services update on the live site straight away. Other catalogue pages still come from the site files.
 - The course enrolment and payment flow is a preview too. It will use Supabase and Stripe once those are set up.
+
+## Database setup
+
+The database tables and access rules are in [supabase/migrations/](supabase/migrations/). For a new Supabase project:
+
+1. Open each migration file in order and run it in the Supabase **SQL Editor**.
+2. Add `SUPABASE_SECRET_KEY` (Supabase → **Project Settings → API Keys**) to `.env.local`, run `npm run db:seed`, then remove the key again if you don't need it locally.
 
 ## Admin accounts
 

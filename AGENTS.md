@@ -46,11 +46,14 @@ Import alias: `@/*` → `src/*`.
 
 ## How data works (important)
 
-There is no backend. Everything dynamic lives in the browser:
+Admin content lives in **Supabase**; there is still no server code (the browser talks to Supabase, and database access rules do the protecting).
 
-- **Admin** is a client-only CMS. `AdminStoreProvider` (`src/lib/admin/store.tsx`) seeds from `src/lib/site.ts` via `seed.ts` and persists to `localStorage` key `barron-admin-v1`. Bump `ADMIN_STORE_VERSION` in `models.ts` when the stored shape changes (old data is then discarded and reseeded).
+- **Tables:** `categories`, `brands`, `services`, `products` (special offers and packages are products). The schema and access rules are in `supabase/migrations/`; apply a new migration in the Supabase SQL Editor and commit the file. Columns are the admin model's fields in snake_case; `src/lib/admin/rows.ts` converts by name, so a new field needs a matching column.
+- **Access rules (RLS):** visitors read published rows only; admins (`public.is_admin()`) read everything and write. Never rely on the admin UI alone for protection.
+- **Admin:** `AdminStoreProvider` (`src/lib/admin/store.tsx`) loads all tables when the admin opens, applies changes on screen straight away, and writes them to Supabase; on a failed write it alerts and reloads.
+- **Seeding:** `npm run db:seed` (`scripts/seed-supabase.ts`) inserts the built-in content from `site.ts` via `seed.ts`. It only adds missing rows (by id), never overwrites admin edits. Needs `SUPABASE_SECRET_KEY` in `.env.local`.
 - **Admin sign-in** uses Supabase Auth (email + password) via `src/lib/admin/auth.ts`. An account is an admin when its `app_metadata.role` is `"admin"`; only SQL or the secret key can set that. `AdminGate` hides the admin UI from everyone else, but that's UI only: database access rules (RLS) must check the same role. The browser client is `getSupabaseBrowser()` in `src/lib/supabase/client.ts` (cookie sessions via `@supabase/ssr`, so server code can read them later). It returns null when the env vars are missing.
-- Public pages render the static data from `site.ts`, then hooks like `usePublicOffers` / `usePublicServices` overlay admin edits from the same browser's `localStorage`. Only **special offers and services** are overlaid; admin edits to products, brands and categories don't change public pages yet. Admin edits are **not** visible to other visitors; to change the live site, edit the content files and redeploy.
+- **Public pages** are prerendered from `site.ts`, then `usePublicOffers` / `usePublicServices` (`src/lib/admin/publicContent.ts`) fetch published special offers, packages and services from Supabase and replace the built-in ones. If Supabase is unreachable or not set up (no categories), the built-in content stays. Other catalogue pages (products, brands, categories) still come from `site.ts` only.
 - **Course enrolment** (`src/lib/course/enrolment.ts`) is a preview that mimics a planned Stripe Checkout + Supabase flow using `localStorage` only. Stripe/Supabase environment variables will be added with that work.
 - The contact form does not send anything to a server.
 
@@ -95,7 +98,7 @@ There is no backend. Everything dynamic lives in the browser:
 
 ### Stored data (`localStorage`)
 
-- Keys are prefixed `barron-` and end with a version (`barron-admin-v1`, `barron-learn-preview-v1`). Each module keeps its key in a local `STORAGE_KEY` constant.
+- Keys are prefixed `barron-` and end with a version (`barron-learn-preview-v1`, `barron-course-enrol-preview-v2`). Only the course preview uses `localStorage` now. Each module keeps its key in a local `STORAGE_KEY` constant.
 - Read and write only through `src/lib/browserStorage.ts` (`readJson`, `writeJson`, `writeStorage`), never `localStorage` directly. The helpers cope with blocked storage and re-render subscribed components.
 - Each module provides `load…`/`save…` functions that check the shape and fall back to fresh/seed data instead of throwing. Write a `normalize…` function for older or partial records (`normalizeAdminOffer`, `normalizeProgress`).
 
@@ -105,7 +108,7 @@ There is no backend. Everything dynamic lives in the browser:
 - Special offers and packages are products, not a separate collection. `AdminProduct.kind` is `"product"` or `"package"` (a package lists other products in `productIds`). Any product or package with `specialOffer` shows on the Special Offers pages while published and inside its `offerStartsAt`/`offerEndsAt` window (`offerStatus()` in `productOffer.ts`). For packages, `priceCents` is the full price and `discountPriceCents` the package price.
 - The store API is generic: `upsert(collection, row)`, `patch(collection, ids, fn)` (stamps `updatedAt`), `remove(collection, id)`. To add a collection, add it to `AdminRows` in `store.tsx`; don't write per-collection functions.
 - Each `*Admin.tsx` editor follows the same pattern: `useAdminStore()` for data, a `draft` state for the open form, and the shared pieces from `admin/fields.tsx` (`AdminField`, `AdminInput`, …, `adminButton`), `admin/list.tsx` (`AdminListHeader`, `AdminTable`, `AdminFormActions`) and `admin/bulk.tsx` (`useRowSelection`, `SelectAllRow`, `SelectRowCell`, `BulkPublishPanel`). Confirm deletes with `AdminConfirmModal`. Copy an existing editor (`ServicesAdmin` is the simplest) rather than building a new pattern.
-- Image inputs use `AdminImageField` (URL, gallery or upload, with preview). Uploads go through `imageLibrary` in `src/lib/admin/imageLibrary.ts`: for now it resizes them and keeps them in this browser's IndexedDB as `data:` URLs; the planned Supabase Storage version only needs that file swapped. Inline uploads count against the ~5 MB `localStorage` limit, so the store alerts if a save fails.
+- Image inputs use `AdminImageField` (URL, gallery or upload, with preview). Uploads go through `imageLibrary` in `src/lib/admin/imageLibrary.ts`: for now it resizes them and keeps them in this browser's IndexedDB as `data:` URLs, which are then saved inside the database row. Moving uploads to Supabase Storage only needs that file swapped.
 - Validation helpers in `src/lib/admin/validation.ts` return a message string or `undefined` (`"Name is required."`). Collect them into `FieldErrors` with `compactErrors`.
 
 ### Domain helpers

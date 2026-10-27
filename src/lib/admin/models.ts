@@ -1,5 +1,3 @@
-export const ADMIN_STORE_VERSION = 2;
-
 export type ProductCondition = "new" | "used";
 
 export type AdminCategory = {
@@ -102,7 +100,6 @@ export function normalizeAdminProduct(product: AdminProduct): AdminProduct {
 }
 
 export type AdminStoreData = {
-  version: typeof ADMIN_STORE_VERSION;
   categories: AdminCategory[];
   brands: AdminBrand[];
   services: AdminService[];

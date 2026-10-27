@@ -10,6 +10,7 @@
     "build": "next build",
     "preview": "next build && next start",
     "import-stock": "python scripts/import-stock.py",
+    "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed-supabase.ts",
     "start": "next start",
     "lint": "eslint"
   },
@@ -30,6 +31,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.7",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

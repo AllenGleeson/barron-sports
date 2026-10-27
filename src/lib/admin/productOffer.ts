@@ -31,10 +31,10 @@ export function offerStatus(product: AdminProduct, now = Date.now()): OfferStatu
   return "live";
 }
 
-export function productToSpecialOffer(
-  product: AdminProduct,
-  store: AdminStoreData,
-): SpecialOffer {
+/** The data needed to build offer cards. */
+export type OfferSource = Pick<AdminStoreData, "categories" | "products">;
+
+export function productToSpecialOffer(product: AdminProduct, store: OfferSource): SpecialOffer {
   const packaged = isPackage(product);
   const contents = packaged ? productsInPackage(product, store.products) : [];
   // Packages without their own category link to their first product's category.
@@ -69,7 +69,7 @@ export function productToSpecialOffer(
 }
 
 /** Live special offers from the admin data, for the public offer pages. */
-export function specialOffersFromStore(store: AdminStoreData): SpecialOffer[] {
+export function specialOffersFromStore(store: OfferSource): SpecialOffer[] {
   return store.products
     .filter((product) => offerStatus(product) === "live")
     .sort((a, b) => a.sortOrder - b.sortOrder)

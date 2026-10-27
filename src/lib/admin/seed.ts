@@ -12,7 +12,6 @@ import {
 } from "@/lib/site";
 import { parsePriceLabel } from "@/lib/admin/money";
 import {
-  ADMIN_STORE_VERSION,
   type AdminBrand,
   type AdminCategory,
   type AdminProduct,
@@ -215,7 +214,6 @@ export function createSeedStore(): AdminStoreData {
   });
 
   return {
-    version: ADMIN_STORE_VERSION,
     categories: categoryRows,
     brands: brandRows,
     services: serviceRows,

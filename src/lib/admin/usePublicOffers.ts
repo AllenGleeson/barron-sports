@@ -1,14 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { specialOffersFromStore } from "@/lib/admin/productOffer";
-import { useAdminStoreData } from "@/lib/admin/store";
+import { loadOfferSource } from "@/lib/admin/publicContent";
+import type { SpecialOffer } from "@/lib/site";
 
 /**
- * Published offers from this browser's admin data.
- * `null` until hydrated: callers render their static fallback until then.
+ * Live special offers from the database.
+ * `null` until loaded (or if the database isn't available): callers render
+ * their built-in fallback until then.
  */
 export function usePublicOffers() {
-  const store = useAdminStoreData();
-  return useMemo(() => (store ? specialOffersFromStore(store) : null), [store]);
+  const [offers, setOffers] = useState<SpecialOffer[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void loadOfferSource().then((source) => {
+      if (active && source) setOffers(specialOffersFromStore(source));
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return offers;
 }

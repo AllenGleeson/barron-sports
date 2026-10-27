@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { isPackage } from "@/lib/admin/models";
 import { useAdminStore } from "@/lib/admin/store";
-import { adminButton } from "@/components/admin/fields";
 
 export function AdminHome() {
-  const { data, reset } = useAdminStore();
+  const { data } = useAdminStore();
   const cards = [
     {
       href: "/admin/products/",
@@ -31,8 +30,9 @@ export function AdminHome() {
     <div>
       <h1 className="font-display text-4xl text-cream">Overview</h1>
       <p className="mt-3 max-w-2xl text-sm text-parchment">
-        Edit shop records in this browser. Changes are saved locally and do not
-        publish to the live pages until a database is connected.
+        Changes are saved to the shop database. Special offers, packages and
+        services update on the live site straight away; the rest of the product
+        pages still come from the site files.
       </p>
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((card) => (
@@ -48,28 +48,10 @@ export function AdminHome() {
           </Link>
         ))}
       </div>
-      <div className="mt-10 border border-line-soft bg-forest p-5">
-        <p className="text-sm text-parchment">
-          Categories ({data.categories.length}) are used as product folders and
-          are not edited here. Reset restores the current site content and
-          discards local admin edits.
-        </p>
-        <button
-          type="button"
-          className={`${adminButton.secondary} mt-4`}
-          onClick={() => {
-            if (
-              window.confirm(
-                "Reset admin data to the current site content? Local edits will be lost.",
-              )
-            ) {
-              reset();
-            }
-          }}
-        >
-          Reset to site data
-        </button>
-      </div>
+      <p className="mt-10 text-sm text-stone">
+        Categories ({data.categories.length}) are used as product folders and are
+        not edited here.
+      </p>
     </div>
   );
 }
