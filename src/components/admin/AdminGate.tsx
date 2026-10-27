@@ -1,23 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ADMIN_PASSWORD,
-  isAdminUnlocked,
   unlockAdmin,
+  useAdminUnlocked,
 } from "@/lib/admin/auth";
 import { adminButton, AdminField, AdminInput } from "@/components/admin/fields";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export function AdminGate({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<"checking" | "locked" | "open">("checking");
+  const unlocked = useAdminUnlocked();
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    setState(isAdminUnlocked() ? "open" : "locked");
-  }, []);
-
-  if (state === "checking") {
+  if (unlocked === undefined) {
     return (
       <p className="p-8 text-sm text-parchment" role="status">
         Checking access…
@@ -25,7 +22,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (state === "open") return children;
+  if (unlocked) return children;
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-forest px-5">
@@ -35,16 +32,16 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
           event.preventDefault();
           if (password === ADMIN_PASSWORD) {
             unlockAdmin();
-            setState("open");
+            setPassword("");
             setError(false);
             return;
           }
           setError(true);
         }}
       >
-        <p className="text-[11px] uppercase tracking-[0.28em] text-brass">
+        <Eyebrow>
           Barron Sports
-        </p>
+        </Eyebrow>
         <h1 className="mt-3 font-display text-4xl text-cream">Admin</h1>
         <p className="mt-3 text-sm text-parchment">
           Sign in to manage services, products, offers and brands.

@@ -88,7 +88,7 @@ export function Footer() {
       <div className="border-t border-line-soft">
         <Container className="flex flex-col gap-3 py-3 text-xs uppercase tracking-[0.16em] text-stone sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} Barron Sports. Ennis, Co. Clare.
+            © {new Date().getFullYear()} {site.name}. {site.location}.
           </p>
           <p>Irish specialist sporting retailer</p>
         </Container>

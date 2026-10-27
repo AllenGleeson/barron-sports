@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { fieldLabelClass } from "@/components/ui/styles";
 import { ProductCardList } from "@/components/cards/ProductCard";
 import { OffersComingSoon } from "@/components/offers/OffersComingSoon";
-import { usePublishedOfferTitles } from "@/lib/admin/usePublicOffers";
+import { usePublicOffers } from "@/lib/admin/usePublicOffers";
 import {
   categories,
   isSpecialOfferProduct,
+  sameTitle,
   type CatalogProduct,
   type Product,
 } from "@/lib/site";
@@ -68,7 +70,7 @@ function FilterSelect({
 }) {
   return (
     <label className="block min-w-0">
-      <span className="text-[11px] uppercase tracking-[0.2em] text-stone">{label}</span>
+      <span className={fieldLabelClass}>{label}</span>
       <span className="relative mt-2 block">
         <select
           id={id}
@@ -175,20 +177,15 @@ export function ProductSearch({
   const [condition, setCondition] = useState("");
   const [brand, setBrand] = useState("");
   const [sort, setSort] = useState<SortKey>("featured");
-  const [page, setPage] = useState(1);
+  // Page number is tied to the filters it was chosen under, so changing a filter starts at page 1.
+  const filterKey = JSON.stringify([brand, category, condition, query.trim().toLowerCase(), sort]);
+  const [pageState, setPageState] = useState({ key: filterKey, page: 1 });
+  const page = pageState.key === filterKey ? pageState.page : 1;
   const resultsRef = useRef<HTMLDivElement>(null);
-  const publishedOfferTitles = usePublishedOfferTitles();
+  const publishedOffers = usePublicOffers();
   const needle = query.trim().toLowerCase();
   const viewingSpecialOffers = category === SPECIAL_OFFERS_FILTER;
-  const noPublishedOffers =
-    publishedOfferTitles !== null && publishedOfferTitles.length === 0;
-
-  function isActiveSpecialOffer(product: Product) {
-    if (publishedOfferTitles) {
-      return publishedOfferTitles.includes(product.name.toLowerCase());
-    }
-    return isSpecialOfferProduct(product);
-  }
+  const noPublishedOffers = publishedOffers !== null && publishedOffers.length === 0;
 
   const brandOptions = useMemo(() => {
     const names = new Set<string>();
@@ -224,7 +221,9 @@ export function ProductSearch({
       if (brand && !productBrands(product).includes(brand)) return false;
       if (condition && !product.featured && product.badge !== condition) return false;
       if (category === SPECIAL_OFFERS_FILTER) {
-        return isActiveSpecialOffer(product);
+        return publishedOffers
+          ? publishedOffers.some((offer) => sameTitle(offer.title, product.name))
+          : isSpecialOfferProduct(product);
       }
       if (
         category &&
@@ -254,7 +253,7 @@ export function ProductSearch({
     const featured = sorted.filter((product) => product.featured);
     const rest = sorted.filter((product) => !product.featured);
     return [...featured, ...rest];
-  }, [brand, category, condition, needle, products, publishedOfferTitles, sort]);
+  }, [brand, category, condition, needle, products, publishedOffers, sort]);
 
   const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -263,13 +262,9 @@ export function ProductSearch({
     currentPage * PAGE_SIZE,
   );
 
-  useEffect(() => {
-    setPage(1);
-  }, [brand, category, condition, needle, sort]);
-
   function goToPage(next: number) {
     const clamped = Math.min(Math.max(1, next), pageCount);
-    setPage(clamped);
+    setPageState({ key: filterKey, page: clamped });
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -291,7 +286,7 @@ export function ProductSearch({
             showCategoryFilter ? "xl:col-span-1" : "lg:col-span-1"
           }`}
         >
-          <span className="text-[11px] uppercase tracking-[0.2em] text-stone">Search products</span>
+          <span className={fieldLabelClass}>Search products</span>
           <span className="relative mt-2 block">
             <input
               type="search"

@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { assetPath } from "@/lib/assetPath";
 
 type CoverImageProps = {
   src: string;
@@ -20,7 +19,7 @@ export function CoverImage({
 }: CoverImageProps) {
   return (
     <Image
-      src={assetPath(src)}
+      src={src}
       alt={alt}
       fill
       priority={priority}

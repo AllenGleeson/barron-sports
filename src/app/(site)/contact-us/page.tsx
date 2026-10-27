@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { PageHero } from "@/components/interior/PageHero";
 import { Container } from "@/components/ui/Container";
-import { site } from "@/lib/site";
+import { pageImages, site } from "@/lib/site";
 
 const mapsQuery = encodeURIComponent(site.address.full);
 const mapsHref = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
@@ -21,10 +21,7 @@ export default function ContactPage() {
         eyebrow="Newpark, Ennis"
         title="Contact Us"
         description="If you have an enquiry about stock, a repair or the right piece of equipment, ask here or call before you travel."
-        image={{
-          src: "/contact/contact-fanore.jpg",
-          alt: "Fanore Beach on the Atlantic coast of County Clare",
-        }}
+        image={pageImages.contactHero}
       />
       <section className="bg-ink py-8 lg:py-10">
         <Container className="grid gap-8 lg:grid-cols-2">

@@ -1,3 +1,5 @@
+import { Eyebrow } from "@/components/ui/Eyebrow";
+
 type SectionHeadingProps = {
   id?: string;
   eyebrow?: string;
@@ -18,9 +20,9 @@ export function SectionHeading({
   return (
     <div className={`flex max-w-2xl flex-col ${alignment}`}>
       {eyebrow ? (
-        <p className="mb-3 text-[11px] uppercase tracking-[0.32em] text-brass">
+        <Eyebrow wide className="mb-3">
           {eyebrow}
-        </p>
+        </Eyebrow>
       ) : null}
       <h2 id={id} className="font-display text-4xl leading-tight text-cream sm:text-5xl">
         {title}

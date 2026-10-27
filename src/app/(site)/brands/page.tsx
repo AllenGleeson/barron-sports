@@ -3,7 +3,7 @@ import { BrandLogo } from "@/components/cards/BrandLogo";
 import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { brands } from "@/lib/site";
+import { brands, pageImages } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Brands",
@@ -19,10 +19,7 @@ export default function BrandsPage() {
         eyebrow="The makers"
         title="Brands We Work With"
         description="We stock brands we are prepared to recommend. If a name is not listed, ask — we can often source it."
-        image={{
-          src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2200&q=80",
-          alt: "Sun through a mature woodland canopy",
-        }}
+        image={pageImages.brandsHero}
       />
       <section className="bg-ink py-8 lg:py-10">
         <Container>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CompactOfferCard } from "@/components/cards/CompactOfferCard";
 import { CoverImage } from "@/components/media/CoverImage";
 import { offerHref, type SpecialOffer } from "@/lib/site";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 const FADE_MS = 1600;
 const FADE_MS_MOBILE = 1000;
@@ -58,7 +59,9 @@ export function OffersCarousel({ offers }: { offers: SpecialOffer[] }) {
   const fadeMs = isMobile ? FADE_MS_MOBILE : FADE_MS;
   const holdMs = isMobile ? HOLD_MS_MOBILE : HOLD_MS;
   const fadeMsRef = useRef(fadeMs);
-  fadeMsRef.current = fadeMs;
+  useEffect(() => {
+    fadeMsRef.current = fadeMs;
+  }, [fadeMs]);
 
   const active = total === 0 ? 0 : ((index % total) + total) % total;
 
@@ -202,9 +205,9 @@ export function OffersCarousel({ offers }: { offers: SpecialOffer[] }) {
                     aria-hidden="true"
                   />
                   <div className="absolute inset-0 flex flex-col justify-center px-6 py-6 sm:px-10">
-                    <p className="text-[11px] uppercase tracking-[0.28em] text-brass">
+                    <Eyebrow>
                       {offer.badge ?? offer.category}
-                    </p>
+                    </Eyebrow>
                     <p className="mt-3 font-display text-3xl uppercase leading-[0.95] tracking-[0.08em] text-white sm:text-4xl">
                       {offer.title}
                     </p>

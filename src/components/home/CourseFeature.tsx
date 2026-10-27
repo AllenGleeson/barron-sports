@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { CoverImage } from "@/components/media/CoverImage";
 import { firearmsCourse } from "@/lib/site";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export function CourseFeature() {
   return (
@@ -9,8 +10,8 @@ export function CourseFeature() {
         <div className="relative isolate overflow-hidden">
           <div className="relative min-h-[18rem] sm:min-h-[16rem] lg:min-h-[20rem]">
             <CoverImage
-              src="/course/course-hero.jpg"
-              alt="Hunting rifle and shotgun on an outdoor shooting bench at dusk"
+              src={firearmsCourse.image.src}
+              alt={firearmsCourse.image.alt}
               sizes="100vw"
               className="object-[center_35%]"
             />
@@ -27,10 +28,10 @@ export function CourseFeature() {
               aria-hidden="true"
             />
             <div className="relative flex min-h-[18rem] flex-col justify-end px-5 py-6 sm:min-h-[16rem] sm:justify-center sm:px-8 sm:py-8 lg:min-h-[20rem] lg:px-12">
-              <p className="flex items-center gap-3 text-[11px] uppercase tracking-[0.32em] text-brass">
+              <Eyebrow wide className="flex items-center gap-3">
                 <span className="inline-block h-px w-8 bg-brass" aria-hidden="true" />
                 Featured course
-              </p>
+              </Eyebrow>
               <h2
                 id="home-course-heading"
                 className="mt-3 max-w-xl font-display text-3xl leading-[1.05] text-cream sm:text-4xl lg:text-5xl"

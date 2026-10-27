@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { pageImages } from "@/lib/site";
 
 export function AboutPreview() {
   return (
@@ -8,16 +10,16 @@ export function AboutPreview() {
       <Container className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
         <div className="relative min-h-[22rem] overflow-hidden lg:min-h-[28rem]">
           <CoverImage
-            src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80"
-            alt="Still lake and wooded hills in the west of Ireland"
+            src={pageImages.aboutPreview.src}
+            alt={pageImages.aboutPreview.alt}
             sizes="(min-width: 1024px) 50vw, 100vw"
           />
           <div className="absolute inset-0 ring-1 ring-inset ring-white/10" aria-hidden="true" />
         </div>
         <div>
-          <p className="text-[11px] uppercase tracking-[0.32em] text-brass">
+          <Eyebrow wide>
             Established in Ennis
-          </p>
+          </Eyebrow>
           <h2
             id="about-heading"
             className="mt-4 font-display text-4xl leading-tight text-cream sm:text-5xl"

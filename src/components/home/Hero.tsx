@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
+import { pageImages } from "@/lib/site";
 
 export function Hero() {
   return (
     <section className="relative isolate min-h-[56vh] overflow-hidden">
       <CoverImage
-        src="/home/shop-background.jpg"
-        alt="Inside Barron Sports in Ennis, with glass cabinets of shooting equipment and outdoor clothing"
+        src={pageImages.shopInterior.src}
+        alt={pageImages.shopInterior.alt}
         priority
         className="scale-105 object-[center_40%]"
       />

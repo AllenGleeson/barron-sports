@@ -1,30 +1,20 @@
 import Link from "next/link";
+import { buttonClass, type ButtonSize, type ButtonVariant } from "@/components/ui/styles";
 
-type Variant = "primary" | "secondary" | "ghost";
-
-const variants: Record<Variant, string> = {
-  primary:
-    "bg-brass text-ink hover:bg-[#dcc392] border border-brass",
-  secondary:
-    "bg-transparent text-cream border border-cream/35 hover:border-brass hover:text-brass",
-  ghost:
-    "bg-transparent text-brass border border-brass/40 hover:border-brass hover:bg-brass/10",
-};
-
-type ButtonProps = {
-  href: string;
-  children: React.ReactNode;
-  variant?: Variant;
+type StyleProps = {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   className?: string;
 };
 
-export function Button({
-  href,
-  children,
-  variant = "primary",
-  className = "",
-}: ButtonProps) {
-  const classes = `inline-flex items-center justify-center px-6 py-3 text-[12px] font-medium uppercase tracking-[0.18em] transition-colors duration-200 ${variants[variant]} ${className}`;
+type ButtonProps = StyleProps & {
+  href: string;
+  children: React.ReactNode;
+};
+
+/** A link styled as a button. `tel:`, `mailto:` and external links use a plain `<a>`. */
+export function Button({ href, children, variant, size, className }: ButtonProps) {
+  const classes = buttonClass({ variant, size, className });
   const isNative =
     href.startsWith("tel:") || href.startsWith("mailto:") || href.startsWith("http");
 
@@ -45,5 +35,18 @@ export function Button({
     <Link href={href} className={classes}>
       {children}
     </Link>
+  );
+}
+
+/** A `<button>` with the same styles as `Button`. Defaults to `type="button"`. */
+export function ActionButton({
+  variant,
+  size,
+  className,
+  type = "button",
+  ...props
+}: StyleProps & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button type={type} className={buttonClass({ variant, size, className })} {...props} />
   );
 }

@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { assetPath } from "@/lib/assetPath";
 
 type LogoProps = {
   className?: string;
@@ -23,7 +22,7 @@ export function Logo({ className = "", priority = false, compact = false }: Logo
         }
       >
         <Image
-          src={assetPath("/brand/logo.png")}
+          src="/brand/logo.png"
           alt=""
           width={656}
           height={201}

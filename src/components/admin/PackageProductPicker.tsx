@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AdminCheckbox, AdminSelect, adminButton } from "@/components/admin/fields";
-import type { AdminCategory, AdminProduct } from "@/lib/admin/models";
+import type { AdminBrand, AdminCategory, AdminProduct } from "@/lib/admin/models";
 import { formatEuro, productSaleCents, sumProductSaleCents } from "@/lib/admin/money";
 
 function productMatchesQuery(product: AdminProduct, needle: string) {
@@ -15,6 +15,7 @@ function productMatchesQuery(product: AdminProduct, needle: string) {
 export function PackageProductPicker({
   products,
   categories,
+  brands,
   selectedIds,
   error,
   onChange,
@@ -22,6 +23,7 @@ export function PackageProductPicker({
 }: {
   products: AdminProduct[];
   categories: AdminCategory[];
+  brands: AdminBrand[];
   selectedIds: string[];
   error?: string;
   onChange: (productIds: string[]) => void;
@@ -29,6 +31,7 @@ export function PackageProductPicker({
 }) {
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState("all");
+  const [brandId, setBrandId] = useState("all");
   const needle = query.trim().toLowerCase();
   const selected = new Set(selectedIds);
   const chosenProducts = useMemo(
@@ -51,11 +54,20 @@ export function PackageProductPicker({
         return a.name.localeCompare(b.name, "en");
       })
       .filter((product) => categoryId === "all" || product.categoryId === categoryId)
+      .filter((product) => brandId === "all" || product.brandIds.includes(brandId))
       .filter(
         (product) =>
           chosen.has(product.id) || !needle || productMatchesQuery(product, needle),
       );
-  }, [categoryId, needle, products, selectedIds]);
+  }, [brandId, categoryId, needle, products, selectedIds]);
+
+  // Only offer brands that at least one product is tagged with.
+  const brandOptions = useMemo(() => {
+    const used = new Set(products.flatMap((product) => product.brandIds));
+    return brands
+      .filter((brand) => used.has(brand.id))
+      .sort((a, b) => a.name.localeCompare(b.name, "en"));
+  }, [brands, products]);
 
   const categoryName = (id: string) =>
     categories.find((category) => category.id === id)?.name ?? "Product";
@@ -70,8 +82,8 @@ export function PackageProductPicker({
           Required
         </p>
       </div>
-      <div className="mt-2 grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-        <div className="relative">
+      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
+        <div className="relative sm:col-span-2 lg:col-span-1">
           <input
             type="search"
             value={query}
@@ -104,6 +116,19 @@ export function PackageProductPicker({
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
+            </option>
+          ))}
+        </AdminSelect>
+        <AdminSelect
+          value={brandId}
+          aria-label="Filter products by brand"
+          className="!mt-0"
+          onChange={(event) => setBrandId(event.target.value)}
+        >
+          <option value="all">All brands</option>
+          {brandOptions.map((brand) => (
+            <option key={brand.id} value={brand.id}>
+              {brand.name}
             </option>
           ))}
         </AdminSelect>

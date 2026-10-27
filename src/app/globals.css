@@ -8,12 +8,14 @@
   --moss: #283424;
   --panel: #323e2c;
   --brass: #c9b17a;
+  --brass-light: #dcc392;
   --brass-dim: #a38c55;
   --cream: #f1eadc;
   --parchment: #d4ccb6;
   --stone: #9a9784;
   --line: rgba(201, 177, 122, 0.28);
   --line-soft: rgba(201, 177, 122, 0.12);
+  --danger: #8c4a3a;
 }
 
 @theme inline {
@@ -22,12 +24,14 @@
   --color-moss: var(--moss);
   --color-panel: var(--panel);
   --color-brass: var(--brass);
+  --color-brass-light: var(--brass-light);
   --color-brass-dim: var(--brass-dim);
   --color-cream: var(--cream);
   --color-parchment: var(--parchment);
   --color-stone: var(--stone);
   --color-line: var(--line);
   --color-line-soft: var(--line-soft);
+  --color-danger: var(--danger);
   --font-sans: var(--font-source), "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
 }

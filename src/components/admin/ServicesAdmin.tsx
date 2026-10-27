@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AdminField,
   AdminFormIntro,
@@ -12,6 +12,12 @@ import {
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import { AdminImagePreview } from "@/components/admin/AdminImagePreview";
 import {
+  BulkPublishPanel,
+  SelectAllRow,
+  SelectRowCell,
+  useRowSelection,
+} from "@/components/admin/bulk";
+import {
   DateColumnFilter,
   formatAdminDate,
   matchesDateFilter,
@@ -21,16 +27,11 @@ import {
   type PublishedFilter,
 } from "@/components/admin/columnFilters";
 import {
-  PublishConfirmModal,
-  type PublishPlan,
-} from "@/components/admin/PublishConfirmModal";
-import {
   AdminFormActions,
   AdminListHeader,
   AdminTable,
   type AdminTableHeader,
 } from "@/components/admin/list";
-import { assetPath } from "@/lib/assetPath";
 import type { AdminService } from "@/lib/admin/models";
 import { slugify } from "@/lib/admin/slug";
 import { newAdminId, useAdminStore } from "@/lib/admin/store";
@@ -56,14 +57,12 @@ function emptyService(sortOrder: number): AdminService {
 }
 
 export function ServicesAdmin() {
-  const { data, upsertService, patchServices, remove } = useAdminStore();
+  const { data, upsert, patch, remove } = useAdminStore();
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState<AdminService | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [attempted, setAttempted] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [publishPlan, setPublishPlan] = useState<PublishPlan | null>(null);
   const [publishedFilter, setPublishedFilter] = useState<PublishedFilter>("all");
   const [dateAddedFilter, setDateAddedFilter] = useState<DateFilter>("all");
   const [lastUpdatedFilter, setLastUpdatedFilter] = useState<DateFilter>("all");
@@ -90,59 +89,12 @@ export function ServicesAdmin() {
     search,
   ]);
 
-  useEffect(() => {
-    const visible = new Set(rows.map((row) => row.id));
-    setSelected((current) => {
-      const next = current.filter((id) => visible.has(id));
-      return next.length === current.length ? current : next;
-    });
-  }, [rows]);
+  const selection = useRowSelection(rows);
 
   const filtersAtDefault =
     publishedFilter === "all" &&
     dateAddedFilter === "all" &&
     lastUpdatedFilter === "all";
-  const allVisibleSelected =
-    rows.length > 0 && rows.every((row) => selected.includes(row.id));
-
-  function toggleSelected(id: string, checked: boolean) {
-    setSelected((current) =>
-      checked ? [...current, id] : current.filter((item) => item !== id),
-    );
-  }
-
-  function setSelectedPublished(published: boolean) {
-    if (selected.length === 0) return;
-    const items = data.services
-      .filter((row) => selected.includes(row.id))
-      .map((row) => ({
-        id: row.id,
-        name: row.title,
-        published: row.published,
-      }));
-    setPublishPlan({
-      published,
-      noun: "service",
-      items,
-      include: items
-        .filter((row) => row.published !== published)
-        .map((row) => row.id),
-    });
-  }
-
-  function confirmPublish() {
-    if (!publishPlan) return;
-    const ids = publishPlan.include;
-    if (ids.length === 0) {
-      setPublishPlan(null);
-      return;
-    }
-    patchServices(ids, (row) => ({
-      ...row,
-      published: publishPlan.published,
-    }));
-    setPublishPlan(null);
-  }
 
   const tableHeaders: AdminTableHeader[] = [
     "Select",
@@ -211,7 +163,7 @@ export function ServicesAdmin() {
             window.setTimeout(scrollToFirstInvalid, 0);
             return;
           }
-          upsertService({
+          upsert("services", {
             ...draft,
             slug: slugify(draft.slug || draft.title),
             updatedAt: new Date().toISOString(),
@@ -365,87 +317,26 @@ export function ServicesAdmin() {
         </button>
       </div>
       <div className="mt-4 max-w-md">
-        <div className="border border-line bg-forest p-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-brass">
-            Set published
-          </p>
-          <p className="mt-3 text-sm text-parchment">
-            {selected.length === 0
-              ? "Select one or more services first."
-              : `${selected.length} selected service${selected.length === 1 ? "" : "s"}`}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={adminButton.primary}
-              disabled={selected.length === 0}
-              onClick={() => setSelectedPublished(true)}
-            >
-              Yes
-            </button>
-            <button
-              type="button"
-              className={adminButton.secondary}
-              disabled={selected.length === 0}
-              onClick={() => setSelectedPublished(false)}
-            >
-              No
-            </button>
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-stone">
-            Published services are shown on the site. Unpublished services are
-            hidden.
-          </p>
-        </div>
-      </div>
-      {publishPlan ? (
-        <PublishConfirmModal
-          plan={publishPlan}
-          onChangeInclude={(include) =>
-            setPublishPlan({ ...publishPlan, include })
+        <BulkPublishPanel
+          noun="service"
+          rows={data.services
+            .filter((row) => selection.isSelected(row.id))
+            .map((row) => ({ id: row.id, name: row.title, published: row.published }))}
+          onApply={(ids, published) =>
+            patch("services", ids, (row) => ({ ...row, published }))
           }
-          onCancel={() => setPublishPlan(null)}
-          onConfirm={confirmPublish}
         />
-      ) : null}
+      </div>
       <AdminTable headers={tableHeaders}>
-        <tr className="bg-forest/60">
-          <td className="px-2.5 py-2.5 sm:px-3 lg:px-4 lg:py-3">
-            <AdminCheckbox
-              label="All"
-              checked={allVisibleSelected}
-              onChange={(event) => {
-                setSelected(
-                  event.target.checked ? rows.map((row) => row.id) : [],
-                );
-              }}
-            />
-          </td>
-          <td
-            colSpan={5}
-            className="px-2.5 py-2.5 text-xs text-stone sm:px-3 lg:px-4 lg:py-3"
-          >
-            {selected.length} selected
-          </td>
-        </tr>
+        <SelectAllRow selection={selection} colSpan={5} />
         {rows.map((row) => (
           <tr key={row.id}>
-            <td className="px-2.5 py-2.5 sm:px-3 lg:px-4 lg:py-3">
-              <input
-                type="checkbox"
-                aria-label={`Select ${row.title}`}
-                checked={selected.includes(row.id)}
-                onChange={(event) =>
-                  toggleSelected(row.id, event.target.checked)
-                }
-                className="size-4 accent-[var(--brass)]"
-              />
-            </td>
+            <SelectRowCell selection={selection} id={row.id} label={row.title} />
             <td className="px-2.5 py-2.5 sm:px-3 lg:px-4 lg:py-3">
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={assetPath(row.imageUrl)}
+                  src={row.imageUrl}
                   alt=""
                   className="h-12 w-16 object-cover"
                 />

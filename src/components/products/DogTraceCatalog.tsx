@@ -1,24 +1,19 @@
 import Image from "next/image";
+import { Chevron, summaryClass } from "@/components/ui/Accordion";
 import { CoverImage } from "@/components/media/CoverImage";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { dogTraceCatalog, site } from "@/lib/site";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 function SpecList({ title, items }: { title: string; items: readonly string[] }) {
   return (
     <>
       <details className="group mt-5 border-t border-line-soft sm:hidden">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3 outline-none [&::-webkit-details-marker]:hidden">
+        <summary className={`${summaryClass} justify-between`}>
           <h3 className="font-display text-xl text-cream">{title}</h3>
-          <svg
-            viewBox="0 0 12 12"
-            className="h-3.5 w-3.5 shrink-0 text-brass transition duration-200 group-open:rotate-180"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.2" />
-          </svg>
+          <Chevron />
         </summary>
         <ul className="space-y-1.5 pb-4 text-sm leading-relaxed text-parchment">
           {items.map((item) => (
@@ -45,9 +40,9 @@ export function DogTraceCatalog() {
         <Container>
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-14">
             <div className="max-w-2xl">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-brass">
+              <Eyebrow>
                 Official stockist
-              </p>
+              </Eyebrow>
               <h2 className="mt-3 font-display text-3xl text-cream sm:text-4xl">
                 DogTrace tracking systems
               </h2>

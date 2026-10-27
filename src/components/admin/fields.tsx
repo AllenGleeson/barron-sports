@@ -1,3 +1,4 @@
+import { buttonClass, fieldLabelClass } from "@/components/ui/styles";
 import type { FieldErrors } from "@/lib/admin/validation";
 
 function fieldClassName(invalid?: boolean) {
@@ -13,6 +14,8 @@ type FieldProps = {
   hint?: string;
   required?: boolean;
   error?: string;
+  /** Use "group" when the field holds more than one control (e.g. buttons). */
+  as?: "label" | "group";
   children: React.ReactNode;
 };
 
@@ -21,12 +24,18 @@ export function AdminField({
   hint,
   required = false,
   error,
+  as = "label",
   children,
 }: FieldProps) {
+  const Wrapper = as === "label" ? "label" : "div";
   return (
-    <label className="block" data-invalid={error ? "true" : undefined}>
+    <Wrapper
+      className="block"
+      data-invalid={error ? "true" : undefined}
+      {...(as === "group" ? { role: "group", "aria-label": label } : {})}
+    >
       <span className="flex items-baseline justify-between gap-3">
-        <span className="text-[11px] uppercase tracking-[0.2em] text-stone">
+        <span className={fieldLabelClass}>
           {label}
         </span>
         <span
@@ -45,7 +54,7 @@ export function AdminField({
       ) : hint ? (
         <span className="mt-1 block text-xs text-stone">{hint}</span>
       ) : null}
-    </label>
+    </Wrapper>
   );
 }
 
@@ -136,20 +145,19 @@ export function AdminCheckbox({
       <input
         type="checkbox"
         {...props}
-        className="size-4 accent-[var(--brass)]"
+        className="size-4 accent-brass"
       />
       {label}
     </label>
   );
 }
 
+/** Admin buttons: the shared button styles at the compact size. */
 export const adminButton = {
-  primary:
-    "inline-flex items-center justify-center bg-brass px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.18em] text-ink hover:bg-[#dcc392] disabled:opacity-50",
-  secondary:
-    "inline-flex items-center justify-center border border-cream/35 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.18em] text-cream hover:border-brass hover:text-brass",
-  danger:
-    "inline-flex items-center justify-center border border-red-400/40 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.18em] text-red-200 hover:border-red-300 hover:text-red-100",
+  primary: buttonClass({ variant: "primary", size: "sm" }),
+  secondary: buttonClass({ variant: "secondary", size: "sm" }),
+  danger: buttonClass({ variant: "danger", size: "sm" }),
+  /** Text-only link style (no border), e.g. "View site". */
   ghost:
     "inline-flex items-center justify-center text-[12px] font-medium uppercase tracking-[0.18em] text-brass hover:text-cream",
 };

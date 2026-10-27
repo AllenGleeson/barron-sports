@@ -1,16 +1,21 @@
+import { writeStorage } from "@/lib/browserStorage";
+import { useStorageItem } from "@/lib/useBrowserStorage";
+
 const AUTH_KEY = "barron-admin-auth";
 
 export const ADMIN_PASSWORD =
   process.env.NEXT_PUBLIC_ADMIN_PASSWORD?.trim() || "barron";
 
-export function isAdminUnlocked() {
-  return window.sessionStorage.getItem(AUTH_KEY) === "1";
+/** `undefined` until hydrated, then whether this tab has unlocked admin. */
+export function useAdminUnlocked() {
+  const value = useStorageItem(AUTH_KEY, "session");
+  return value === undefined ? undefined : value === "1";
 }
 
 export function unlockAdmin() {
-  window.sessionStorage.setItem(AUTH_KEY, "1");
+  writeStorage(AUTH_KEY, "1", "session");
 }
 
 export function lockAdmin() {
-  window.sessionStorage.removeItem(AUTH_KEY);
+  writeStorage(AUTH_KEY, null, "session");
 }

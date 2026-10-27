@@ -65,7 +65,7 @@ export function PublishConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="publish-confirm-title"
-        className="w-full max-w-2xl border border-line bg-moss p-5 sm:p-6"
+        className="my-auto w-full max-w-2xl border border-line bg-moss p-5 sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="text-[11px] uppercase tracking-[0.2em] text-brass">
@@ -117,7 +117,7 @@ export function PublishConfirmModal({
                   >
                     <input
                       type="checkbox"
-                      className="mt-1 size-4 shrink-0 accent-[var(--brass)]"
+                      className="mt-1 size-4 shrink-0 accent-brass"
                       checked={included}
                       aria-label={`Change ${flagLabel} on ${row.name}`}
                       onChange={(event) => {

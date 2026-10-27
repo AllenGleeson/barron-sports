@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { lockAdmin } from "@/lib/admin/auth";
 import { adminButton } from "@/components/admin/fields";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 const nav = [
   { href: "/admin/", label: "Overview" },
   { href: "/admin/services/", label: "Services" },
   { href: "/admin/products/", label: "Products" },
-  { href: "/admin/offers/", label: "Offers" },
   { href: "/admin/brands/", label: "Brands" },
 ];
 
@@ -20,15 +20,16 @@ function isActive(pathname: string, href: string) {
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <div className="min-h-dvh bg-ink">
       <header className="sticky top-0 z-20 border-b border-line bg-forest">
         <div className="mx-auto flex w-full max-w-[96rem] flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.28em] text-brass">
+            <Eyebrow>
               Barron Sports
-            </p>
+            </Eyebrow>
             <p className="font-display text-2xl text-cream">Admin</p>
           </div>
           <nav className="flex flex-1 flex-wrap gap-1 sm:justify-center">
@@ -58,7 +59,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               className={adminButton.secondary}
               onClick={() => {
                 lockAdmin();
-                window.location.assign("/admin/");
+                router.push("/admin");
               }}
             >
               Sign out

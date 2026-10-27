@@ -1,5 +1,4 @@
-export const ADMIN_STORE_VERSION = 1;
-export const FIREARM_CATEGORY_SLUGS = ["rifles", "shotguns"] as const;
+export const ADMIN_STORE_VERSION = 2;
 
 export type ProductCondition = "new" | "used";
 
@@ -42,14 +41,22 @@ export type AdminService = {
   updatedAt: string;
 };
 
+/** A normal product, or a package made from other products. */
+export type AdminProductKind = "product" | "package";
+
 export type AdminProduct = {
   id: string;
+  kind: AdminProductKind;
   slug: string;
+  /** Empty for packages without a category. */
   categoryId: string;
   name: string;
+  /** Product description; for packages, the package description. */
   summary: string;
   imageUrl: string | null;
+  /** Regular price (for packages, usually the items total). */
   priceCents: number | null;
+  /** Sale price; for packages, the package price. */
   discountPriceCents: number | null;
   priceDisplay: string | null;
   caliber: string | null;
@@ -57,56 +64,40 @@ export type AdminProduct = {
   conditionDetail: string | null;
   badge: string | null;
   featured: boolean;
-  specialOffer: boolean;
   quantity: number | null;
   stockNote: string | null;
   brandIds: string[];
-  published: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type AdminOfferKind = "offer" | "package";
-
-export type AdminOffer = {
-  id: string;
-  kind: AdminOfferKind;
-  title: string;
-  description: string;
-  productId: string | null;
+  /** Products in a package. Empty for normal products. */
   productIds: string[];
-  categoryId: string | null;
-  categoryLabel: string;
-  imageUrl: string;
+  /** Shown on the Special Offers pages when set. */
+  specialOffer: boolean;
+  /** Label on the offer card, e.g. "Clay Traps". Falls back to the category name. */
+  offerLabel: string | null;
+  /** Bullet points on the offer card. */
   highlights: string[];
-  priceCents: number | null;
-  originalPriceCents: number | null;
-  priceDisplay: string | null;
-  badge: string | null;
+  offerStartsAt: string | null;
+  offerEndsAt: string | null;
   published: boolean;
   sortOrder: number;
-  startsAt: string | null;
-  endsAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
-export function isPackageOffer(offer: Pick<AdminOffer, "kind">) {
-  return offer.kind === "package";
+export function isPackage(product: Pick<AdminProduct, "kind">) {
+  return product.kind === "package";
 }
 
-export function normalizeAdminOffer(offer: AdminOffer): AdminOffer {
-  const productIds = Array.isArray(offer.productIds)
-    ? offer.productIds.filter(Boolean)
-    : [];
-  const fromSingle =
-    productIds.length === 0 && offer.productId ? [offer.productId] : productIds;
+/** Fills fields that older or hand-edited records may be missing. */
+export function normalizeAdminProduct(product: AdminProduct): AdminProduct {
   return {
-    ...offer,
-    kind: offer.kind === "package" ? "package" : "offer",
-    description: offer.description ?? "",
-    productIds: fromSingle,
+    ...product,
+    kind: product.kind === "package" ? "package" : "product",
+    productIds: Array.isArray(product.productIds) ? product.productIds.filter(Boolean) : [],
+    highlights: Array.isArray(product.highlights) ? product.highlights : [],
+    specialOffer: Boolean(product.specialOffer),
+    offerLabel: product.offerLabel ?? null,
+    offerStartsAt: product.offerStartsAt ?? null,
+    offerEndsAt: product.offerEndsAt ?? null,
   };
 }
 
@@ -116,9 +107,4 @@ export type AdminStoreData = {
   brands: AdminBrand[];
   services: AdminService[];
   products: AdminProduct[];
-  offers: AdminOffer[];
 };
-
-export function isFirearmCategory(slug: string) {
-  return (FIREARM_CATEGORY_SLUGS as readonly string[]).includes(slug);
-}

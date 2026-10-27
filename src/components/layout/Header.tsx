@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { CoverImage } from "@/components/media/CoverImage";
 import { Container } from "@/components/ui/Container";
+import { useHydrated } from "@/lib/useBrowserStorage";
 import { categories, primaryNav, site } from "@/lib/site";
 
 export function Header() {
@@ -15,7 +16,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
-  const [menuMounted, setMenuMounted] = useState(false);
+  const menuMounted = useHydrated();
   const [navPath, setNavPath] = useState(pathname);
   const closeTimer = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -77,10 +78,6 @@ export function Header() {
       window.removeEventListener("resize", syncMenuTop);
     };
   }, [mobileOpen, pathname, productsOpen]);
-
-  useEffect(() => {
-    setMenuMounted(true);
-  }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";

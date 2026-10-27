@@ -6,7 +6,7 @@ import { usePublicOffers } from "@/lib/admin/usePublicOffers";
 import type { SpecialOffer } from "@/lib/site";
 
 export function SpecialOffersGrid({ offers }: { offers: SpecialOffer[] }) {
-  const fromStore = usePublicOffers(offers);
+  const fromStore = usePublicOffers();
   const rows = fromStore ?? offers;
 
   if (fromStore !== null && rows.length === 0) {

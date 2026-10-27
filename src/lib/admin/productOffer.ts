@@ -1,86 +1,77 @@
-import {
-  isPackageOffer,
-  type AdminOffer,
-  type AdminProduct,
-  type AdminStoreData,
-} from "@/lib/admin/models";
-import { formatEuro } from "@/lib/admin/money";
-import { PRODUCT_PLACEHOLDER_IMAGE, type SpecialOffer } from "@/lib/site";
+import { isPackage, type AdminProduct, type AdminStoreData } from "@/lib/admin/models";
+import { formatEuro, isDiscounted } from "@/lib/admin/money";
+import { categoryHref, PRODUCT_PLACEHOLDER_IMAGE, type SpecialOffer } from "@/lib/site";
 
+/** The products inside a package, in the order they were picked. */
 export function productsInPackage(
-  offer: Pick<AdminOffer, "productIds">,
+  product: Pick<AdminProduct, "productIds">,
   products: AdminProduct[],
 ) {
-  const byId = new Map(products.map((product) => [product.id, product]));
-  return offer.productIds
+  const byId = new Map(products.map((row) => [row.id, row]));
+  return product.productIds
     .map((id) => byId.get(id))
-    .filter((product): product is AdminProduct => Boolean(product));
+    .filter((row): row is AdminProduct => Boolean(row));
 }
 
-export function isCatalogOnlyOffer(offer: { id: string; title: string }) {
-  return (
-    offer.id === "dogtrace-gps" ||
-    offer.title.toLowerCase() === "gps dog tracking systems"
-  );
+/** Packages that include `productId`. */
+export function packagesContaining(productId: string, products: AdminProduct[]) {
+  return products.filter((row) => isPackage(row) && row.productIds.includes(productId));
 }
 
-function offerIsLive(offer: AdminOffer, now = Date.now()) {
-  if (!offer.published) return false;
-  if (offer.startsAt) {
-    const start = new Date(offer.startsAt).getTime();
-    if (!Number.isNaN(start) && start > now) return false;
-  }
-  if (offer.endsAt) {
-    const end = new Date(offer.endsAt).getTime();
-    if (!Number.isNaN(end) && end < now) return false;
-  }
-  return true;
+export type OfferStatus = "live" | "scheduled" | "ended" | "hidden" | "none";
+
+/** Whether a product shows on the Special Offers pages right now. */
+export function offerStatus(product: AdminProduct, now = Date.now()): OfferStatus {
+  if (!product.specialOffer) return "none";
+  if (!product.published) return "hidden";
+  const start = product.offerStartsAt ? new Date(product.offerStartsAt).getTime() : NaN;
+  if (!Number.isNaN(start) && start > now) return "scheduled";
+  const end = product.offerEndsAt ? new Date(product.offerEndsAt).getTime() : NaN;
+  if (!Number.isNaN(end) && end < now) return "ended";
+  return "live";
 }
 
-export function adminOfferToSpecialOffer(
-  offer: AdminOffer,
+export function productToSpecialOffer(
+  product: AdminProduct,
   store: AdminStoreData,
 ): SpecialOffer {
-  const category = store.categories.find((item) => item.id === offer.categoryId);
-  const packaged = productsInPackage(offer, store.products);
-  const isPackage = isPackageOffer(offer);
-  const product = isPackage
-    ? packaged[0]
-    : offer.productId
-      ? store.products.find((item) => item.id === offer.productId)
-      : undefined;
-  const productCategory = product
-    ? store.categories.find((item) => item.id === product.categoryId)
-    : undefined;
-  const hrefCategory = productCategory ?? category;
-  const packageLines = packaged.map((item) => item.name);
+  const packaged = isPackage(product);
+  const contents = packaged ? productsInPackage(product, store.products) : [];
+  // Packages without their own category link to their first product's category.
+  const category =
+    store.categories.find((row) => row.id === product.categoryId) ??
+    store.categories.find((row) => row.id === contents[0]?.categoryId);
+  const discounted = isDiscounted(product);
+
+  const bullets = packaged
+    ? contents.map((item) => item.name)
+    : product.highlights.length > 0
+      ? product.highlights
+      : [product.summary];
 
   return {
-    id: offer.id,
-    kind: isPackage ? "package" : "offer",
+    id: product.id,
+    kind: packaged ? "package" : "offer",
     category:
-      offer.categoryLabel.trim() ||
-      category?.name ||
-      (isPackage ? "Package" : "Special Offer"),
-    title: offer.title,
-    image: offer.imageUrl || PRODUCT_PLACEHOLDER_IMAGE,
-    summary: offer.description.trim() || undefined,
-    description: isPackage && packageLines.length ? packageLines : offer.highlights,
-    rrp:
-      offer.originalPriceCents != null
-        ? formatEuro(offer.originalPriceCents)
-        : undefined,
-    price: formatEuro(offer.priceCents, offer.priceDisplay),
-    badge: offer.badge ?? (isPackage ? "Package" : undefined),
-    href: hrefCategory
-      ? `/products/${hrefCategory.slug}/`
-      : "/special-offers/",
+      product.offerLabel?.trim() || (packaged ? "Package" : category?.name ?? "Special Offer"),
+    title: product.name,
+    image: product.imageUrl || PRODUCT_PLACEHOLDER_IMAGE,
+    summary: packaged ? product.summary.trim() || undefined : undefined,
+    description: bullets,
+    rrp: discounted ? formatEuro(product.priceCents) : undefined,
+    price: formatEuro(
+      discounted ? product.discountPriceCents : product.priceCents,
+      product.priceDisplay,
+    ),
+    badge: product.badge ?? (packaged ? "Package" : undefined),
+    href: category ? categoryHref(category.slug) : "/special-offers",
   };
 }
 
+/** Live special offers from the admin data, for the public offer pages. */
 export function specialOffersFromStore(store: AdminStoreData): SpecialOffer[] {
-  return store.offers
-    .filter((offer) => offerIsLive(offer) && !isCatalogOnlyOffer(offer))
+  return store.products
+    .filter((product) => offerStatus(product) === "live")
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((offer) => adminOfferToSpecialOffer(offer, store));
+    .map((product) => productToSpecialOffer(product, store));
 }

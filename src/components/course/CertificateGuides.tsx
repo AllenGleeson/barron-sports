@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { AccordionItem, AccordionList } from "@/components/ui/Accordion";
 import { Container } from "@/components/ui/Container";
 import {
   GARDA_COMMISSIONER_GUIDELINES_HREF,
@@ -82,19 +83,6 @@ function GuideBlocks({ blocks }: { blocks: GuideBlock[] }) {
   );
 }
 
-function GuideChevron() {
-  return (
-    <svg
-      viewBox="0 0 12 12"
-      className="h-3.5 w-3.5 shrink-0 text-brass transition duration-200 group-open:rotate-180 group-hover/item:text-[#dcc392]"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
-}
-
 function GuideArticle({ guide }: { guide: CertificateGuide }) {
   return (
     <article className="border border-line bg-moss px-5 py-6">
@@ -138,27 +126,16 @@ export function CertificateGuides() {
           </div>
         </div>
 
-        <ul className="mt-10 divide-y divide-line-soft border-y border-line-soft sm:hidden">
+        <AccordionList className="mt-10 sm:hidden">
           {certificateGuides.map((guide) => (
-            <li
-              key={guide.title}
-              className="group/item -mx-2 px-2 transition-colors hover:bg-moss active:bg-moss"
-            >
-              <details className="group" name="certificate-guides">
-                <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-none [&::-webkit-details-marker]:hidden">
-                  <h3 className="min-w-0 flex-1 font-display text-xl leading-snug text-cream transition-colors group-hover/item:text-brass">
-                    {guide.title}
-                  </h3>
-                  <GuideChevron />
-                </summary>
-                <div className="pb-5">
-                  <p className="mb-4 text-sm leading-relaxed text-stone">{guide.summary}</p>
-                  <GuideBlocks blocks={guide.blocks} />
-                </div>
-              </details>
-            </li>
+            <AccordionItem key={guide.title} name="certificate-guides" title={guide.title}>
+              <div className="pb-5">
+                <p className="mb-4 text-sm leading-relaxed text-stone">{guide.summary}</p>
+                <GuideBlocks blocks={guide.blocks} />
+              </div>
+            </AccordionItem>
           ))}
-        </ul>
+        </AccordionList>
 
         <div className="mt-10 hidden space-y-4 sm:block">
           {certificateGuides.map((guide) => (

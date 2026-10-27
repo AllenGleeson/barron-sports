@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { assetPath } from "@/lib/assetPath";
+import { useState } from "react";
 
 type AdminImagePreviewProps = {
   src: string | null | undefined;
@@ -17,11 +16,9 @@ export function AdminImagePreview({
   emptyLabel = "No image",
 }: AdminImagePreviewProps) {
   const trimmed = src?.trim() ?? "";
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setFailed(false);
-  }, [trimmed]);
+  // Remember which URL failed, so typing a new one clears the error.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === trimmed;
 
   const frame =
     variant === "logo"
@@ -44,9 +41,9 @@ export function AdminImagePreview({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={trimmed}
-            src={assetPath(trimmed)}
+            src={trimmed}
             alt={alt}
-            onError={() => setFailed(true)}
+            onError={() => setFailedSrc(trimmed)}
             className={
               variant === "logo"
                 ? "max-h-full max-w-full object-contain"

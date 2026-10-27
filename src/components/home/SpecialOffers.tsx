@@ -4,11 +4,11 @@ import { OffersCarousel } from "@/components/home/OffersCarousel";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { usePublicOffers } from "@/lib/admin/usePublicOffers";
-import { featuredOffers } from "@/lib/site";
+import { SPECIAL_OFFERS } from "@/lib/site";
 
 export function SpecialOffers() {
-  const fromStore = usePublicOffers(featuredOffers);
-  const offers = fromStore ?? featuredOffers;
+  const fromStore = usePublicOffers();
+  const offers = fromStore ?? SPECIAL_OFFERS;
 
   if (fromStore !== null && offers.length === 0) return null;
 

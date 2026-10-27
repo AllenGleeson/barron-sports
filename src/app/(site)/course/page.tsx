@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { CertificateGuides } from "@/components/course/CertificateGuides";
 import { PageHero } from "@/components/interior/PageHero";
 import { CoverImage } from "@/components/media/CoverImage";
+import { AccordionItem, AccordionList } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { firearmsCourse, site } from "@/lib/site";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export const metadata: Metadata = {
   title: "Firearms Safety Course",
@@ -43,31 +45,13 @@ export default function CoursePage() {
             </p>
           </div>
 
-          <ul className="mt-10 divide-y divide-line-soft border-y border-line-soft sm:hidden">
+          <AccordionList className="mt-10 sm:hidden">
             {firearmsCourse.topics.map((topic) => (
-              <li
-                key={topic.title}
-                className="group/item -mx-2 px-2 transition-colors hover:bg-moss active:bg-moss"
-              >
-                <details className="group" name="course-topics">
-                  <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-none [&::-webkit-details-marker]:hidden">
-                    <h3 className="min-w-0 flex-1 font-display text-xl leading-snug text-cream transition-colors group-hover/item:text-brass">
-                      {topic.title}
-                    </h3>
-                    <svg
-                      viewBox="0 0 12 12"
-                      className="h-3.5 w-3.5 shrink-0 text-brass transition duration-200 group-open:rotate-180 group-hover/item:text-[#dcc392]"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.2" />
-                    </svg>
-                  </summary>
-                  <p className="pb-4 text-sm leading-relaxed text-parchment">{topic.body}</p>
-                </details>
-              </li>
+              <AccordionItem key={topic.title} name="course-topics" title={topic.title}>
+                <p className="pb-4 text-sm leading-relaxed text-parchment">{topic.body}</p>
+              </AccordionItem>
             ))}
-          </ul>
+          </AccordionList>
 
           <ul className="mt-10 hidden gap-4 sm:grid sm:grid-cols-2">
             {firearmsCourse.topics.map((topic) => (
@@ -84,9 +68,9 @@ export default function CoursePage() {
 
       <section className="bg-forest py-10 lg:py-16" aria-labelledby="featured-course-heading">
         <Container>
-          <p className="mb-4 text-center text-[11px] uppercase tracking-[0.28em] text-brass">
+          <Eyebrow className="mb-4 text-center">
             Featured
-          </p>
+          </Eyebrow>
           <article className="grid overflow-hidden border border-line bg-moss lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
             <div className="relative min-h-[16rem] lg:min-h-[28rem]">
               <CoverImage
@@ -96,9 +80,9 @@ export default function CoursePage() {
               />
             </div>
             <div className="flex flex-col justify-center px-6 py-8 sm:px-10">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-brass">
+              <Eyebrow>
                 {firearmsCourse.provider}
-              </p>
+              </Eyebrow>
               <h2
                 id="featured-course-heading"
                 className="mt-3 font-display text-3xl leading-tight text-cream sm:text-4xl"
@@ -113,7 +97,7 @@ export default function CoursePage() {
                 instructor once the certificate is through. Call {site.phone.display}.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Button href={firearmsCourse.href}>{firearmsCourse.cta}</Button>
+                <Button href="/course/enrol">{firearmsCourse.cta}</Button>
                 <Button href="/contact-us" variant="ghost">
                   Ask about the course
                 </Button>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { ActionButton } from "@/components/ui/Button";
+import { fieldClass, fieldLabelClass } from "@/components/ui/styles";
 import { site } from "@/lib/site";
 
 const SUBJECTS = [
@@ -12,8 +14,6 @@ const SUBJECTS = [
   "Stock or availability",
 ] as const;
 
-const fieldClassName =
-  "mt-2 w-full border border-line bg-ink px-3 py-3 text-cream outline-none focus:border-brass";
 
 export function ContactForm() {
   const [sent, setSent] = useState(false);
@@ -39,37 +39,36 @@ export function ContactForm() {
         setSubjectError(false);
         const subject = encodeURIComponent(`${topic} enquiry from ${name}`);
         const body = encodeURIComponent(`${message}\n\n${name}\n${email}`);
+        // site.email.href is an absolute mailto: link, so the base path doesn't apply.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.assign(`${site.email.href}?subject=${subject}&body=${body}`);
         setSent(true);
       }}
     >
       <div className="grid gap-4">
         <label className="block">
-          <span className="text-[11px] uppercase tracking-[0.2em] text-stone">Name</span>
-          <input name="name" required autoComplete="name" className={fieldClassName} />
+          <span className={fieldLabelClass}>Name</span>
+          <input name="name" required autoComplete="name" className={fieldClass} />
         </label>
         <label className="block">
-          <span className="text-[11px] uppercase tracking-[0.2em] text-stone">Email</span>
+          <span className={fieldLabelClass}>Email</span>
           <input
             name="email"
             type="email"
             required
             autoComplete="email"
-            className={fieldClassName}
+            className={fieldClass}
           />
         </label>
         <SubjectSearch error={subjectError} onChange={() => setSubjectError(false)} />
         <label className="block">
-          <span className="text-[11px] uppercase tracking-[0.2em] text-stone">Message</span>
-          <textarea name="message" required rows={6} className={`${fieldClassName} resize-y`} />
+          <span className={fieldLabelClass}>Message</span>
+          <textarea name="message" required rows={6} className={`${fieldClass} resize-y`} />
         </label>
       </div>
-      <button
-        type="submit"
-        className="mt-4 inline-flex bg-brass px-6 py-3 text-[12px] font-medium uppercase tracking-[0.18em] text-ink hover:bg-[#dcc392]"
-      >
+      <ActionButton type="submit" className="mt-4">
         Send message
-      </button>
+      </ActionButton>
       {sent ? (
         <p className="mt-4 text-sm text-parchment" role="status">
           Your email application should open with the message ready to send.
@@ -190,7 +189,7 @@ function SubjectSearch({ error, onChange }: { error: boolean; onChange: () => vo
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => toggle(item)}
-                      className="h-4 w-4 shrink-0 accent-[#c9b17a]"
+                      className="h-4 w-4 shrink-0 accent-brass"
                     />
                     {item}
                   </label>

@@ -27,7 +27,7 @@ export function BackToTop() {
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
       }}
-      className={`fixed right-4 bottom-4 z-[70] flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-brass bg-brass text-ink shadow-lg transition-all duration-300 hover:border-cream hover:bg-[#dcc392] sm:right-6 sm:bottom-6 ${
+      className={`fixed right-4 bottom-4 z-[70] flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-brass bg-brass text-ink shadow-lg transition-all duration-300 hover:border-cream hover:bg-brass-light sm:right-6 sm:bottom-6 ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >

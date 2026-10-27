@@ -3,30 +3,24 @@ import {
   brands,
   categories,
   getAllProducts,
+  isFirearmCategory,
+  OFFER_CATEGORY_SLUGS,
+  PRODUCT_PLACEHOLDER_IMAGE,
+  sameTitle,
   services,
   SPECIAL_OFFERS,
 } from "@/lib/site";
 import { parsePriceLabel } from "@/lib/admin/money";
 import {
   ADMIN_STORE_VERSION,
-  isFirearmCategory,
   type AdminBrand,
   type AdminCategory,
-  type AdminOffer,
   type AdminProduct,
   type AdminService,
   type AdminStoreData,
   type ProductCondition,
 } from "@/lib/admin/models";
 import { uniqueSlug } from "@/lib/admin/slug";
-
-const OFFER_CATEGORY_SLUGS: Record<string, string> = {
-  Rifles: "rifles",
-  Scopes: "accessories",
-  "Clay Traps": "accessories",
-  "Ear Protection": "accessories",
-  "Thermal Optics": "night-vision-optics",
-};
 
 function recordId(prefix: string, slug: string) {
   return `${prefix}-${slug}`;
@@ -98,15 +92,10 @@ const OFFER_BRAND_HINTS: Record<string, string[]> = {
   "Pard Thermal Image Spotters": ["Pard"],
 };
 
-function isSpecialOfferTitle(name: string) {
-  const lower = name.toLowerCase();
-  return SPECIAL_OFFERS.some((offer) => offer.title.toLowerCase() === lower);
-}
-
 function canonicalOfferTitle(name: string) {
   const lower = name.toLowerCase();
   for (const offer of SPECIAL_OFFERS) {
-    if (offer.title.toLowerCase() === lower) return offer.title;
+    if (sameTitle(offer.title, name)) return offer.title;
     const aliases = OFFER_PRODUCT_ALIASES[offer.title.toLowerCase()] ?? [];
     if (aliases.includes(lower)) return offer.title;
   }
@@ -144,7 +133,7 @@ export function createSeedStore(): AdminStoreData {
     description: category.description,
     imageUrl: category.image.src,
     imageAlt: category.image.alt,
-    showImages: category.slug !== "rifles" && category.slug !== "shotguns",
+    showImages: !isFirearmCategory(category.slug),
     sortOrder: index,
     published: true,
   }));
@@ -200,6 +189,7 @@ export function createSeedStore(): AdminStoreData {
 
     return {
       id: recordId("product", slug),
+      kind: "product",
       slug,
       categoryId: category?.id ?? categoryRows[0].id,
       name: product.name,
@@ -213,10 +203,10 @@ export function createSeedStore(): AdminStoreData {
       conditionDetail,
       badge: product.badge ?? null,
       featured: Boolean(product.featured),
-      specialOffer: isSpecialOfferTitle(product.name),
       quantity,
       stockNote,
       brandIds: matchBrandIds(product.brands, brandRows),
+      ...NOT_AN_OFFER,
       published: true,
       sortOrder: index,
       createdAt: now,
@@ -224,133 +214,93 @@ export function createSeedStore(): AdminStoreData {
     };
   });
 
-  const offerRows: AdminOffer[] = SPECIAL_OFFERS.filter(
-    (offer) => offer.id !== "dogtrace-gps",
-  ).map((offer, index) => {
-    const categorySlug = OFFER_CATEGORY_SLUGS[offer.category];
-    const category = categorySlug
-      ? categoryRows.find((row) => row.slug === categorySlug)
-      : undefined;
-    const sale = parsePriceLabel(offer.price);
-    const rrp = parsePriceLabel(offer.rrp);
-    const matchedProduct =
-      productRows.find(
-        (product) => product.name.toLowerCase() === offer.title.toLowerCase(),
-      ) ?? null;
-
-    return {
-      id: offer.id,
-      kind: "offer",
-      title: offer.title,
-      description: "",
-      productId: matchedProduct?.id ?? null,
-      productIds: matchedProduct ? [matchedProduct.id] : [],
-      categoryId: category?.id ?? null,
-      categoryLabel: offer.category,
-      imageUrl: offer.image,
-      highlights: offer.description,
-      priceCents: sale.cents,
-      originalPriceCents: rrp.cents,
-      priceDisplay: sale.display,
-      badge: offer.badge ?? null,
-      published: true,
-      sortOrder: index,
-      startsAt: null,
-      endsAt: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-  });
-
-  return mergeSpecialOfferProducts({
+  return {
     version: ADMIN_STORE_VERSION,
     categories: categoryRows,
     brands: brandRows,
     services: serviceRows,
-    products: productRows,
-    offers: offerRows,
-  });
+    products: withSpecialOffers(productRows, categoryRows, brandRows),
+  };
 }
 
-export function mergeSpecialOfferProducts(data: AdminStoreData): AdminStoreData {
-  const now = stamp();
-  const taken = new Set(data.products.map((product) => product.slug));
+const NOT_AN_OFFER = {
+  productIds: [],
+  specialOffer: false,
+  offerLabel: null,
+  highlights: [],
+  offerStartsAt: null,
+  offerEndsAt: null,
+} satisfies Partial<AdminProduct>;
 
-  const products = data.products.map((product) => {
-    const title = canonicalOfferTitle(product.name);
-    if (!title || product.name === title) {
-      return { ...product, specialOffer: Boolean(product.specialOffer) };
+/**
+ * Marks the site's special offers (`SPECIAL_OFFERS`) as special-offer products,
+ * matching existing catalogue products by title and creating the rest.
+ */
+function withSpecialOffers(
+  products: AdminProduct[],
+  categoryRows: AdminCategory[],
+  brandRows: AdminBrand[],
+): AdminProduct[] {
+  const now = stamp();
+  const taken = new Set(products.map((product) => product.slug));
+  const rows = products.slice();
+
+  SPECIAL_OFFERS.forEach((offer, offerIndex) => {
+    const sale = parsePriceLabel(offer.price);
+    const rrp = parsePriceLabel(offer.rrp);
+    const offerFields = {
+      name: offer.title,
+      imageUrl: offer.image || PRODUCT_PLACEHOLDER_IMAGE,
+      priceCents: rrp.cents ?? sale.cents,
+      discountPriceCents: rrp.cents ? sale.cents : null,
+      priceDisplay: sale.display,
+      badge: offer.badge ?? null,
+      specialOffer: true,
+      offerLabel: offer.category,
+      highlights: offer.description,
+      // Offers list first, in the site's order (the offer pages sort by this).
+      sortOrder: offerIndex - SPECIAL_OFFERS.length,
+    };
+
+    const index = rows.findIndex((product) => canonicalOfferTitle(product.name) === offer.title);
+    if (index !== -1) {
+      const product = rows[index];
+      rows[index] = {
+        ...product,
+        ...offerFields,
+        badge: offerFields.badge ?? product.badge,
+        brandIds:
+          product.brandIds.length > 0
+            ? product.brandIds
+            : matchBrandIds(OFFER_BRAND_HINTS[offer.title], brandRows),
+      };
+      return;
     }
 
-    const offer = SPECIAL_OFFERS.find((row) => row.title === title);
-    if (!offer) return { ...product, name: title };
-
-    const sale = parsePriceLabel(offer.price);
-    const rrp = parsePriceLabel(offer.rrp);
-
-    return {
-      ...product,
-      name: title,
-      summary: `${offer.description.join(". ")}.`,
-      imageUrl: offer.image,
-      priceCents: rrp.cents ?? sale.cents,
-      discountPriceCents: rrp.cents ? sale.cents : null,
-      priceDisplay: sale.display,
-      badge: offer.badge ?? product.badge,
-      brandIds:
-        product.brandIds.length > 0
-          ? product.brandIds
-          : matchBrandIds(OFFER_BRAND_HINTS[title], data.brands),
-      specialOffer: true,
-      updatedAt: now,
-    };
-  });
-
-  const existingNames = new Set(products.map((product) => product.name.toLowerCase()));
-
-  for (const offer of SPECIAL_OFFERS) {
-    if (existingNames.has(offer.title.toLowerCase())) continue;
-
     const slug = uniqueSlug(offer.title, taken, offer.id);
-    const categorySlug = OFFER_CATEGORY_SLUGS[offer.category];
     const category =
-      data.categories.find((row) => row.slug === categorySlug) ?? data.categories[0];
-    const sale = parsePriceLabel(offer.price);
-    const rrp = parsePriceLabel(offer.rrp);
-
-    products.push({
+      categoryRows.find((row) => row.slug === OFFER_CATEGORY_SLUGS[offer.category]) ??
+      categoryRows[0];
+    rows.push({
+      ...NOT_AN_OFFER,
+      ...offerFields,
       id: recordId("product", slug),
+      kind: "product",
       slug,
       categoryId: category.id,
-      name: offer.title,
       summary: `${offer.description.join(". ")}.`,
-      imageUrl: offer.image,
-      priceCents: rrp.cents ?? sale.cents,
-      discountPriceCents: rrp.cents ? sale.cents : null,
-      priceDisplay: sale.display,
       caliber: parseCaliber(category.slug, offer.title, offer.description.join(" ")),
       condition: null,
       conditionDetail: null,
-      badge: offer.badge ?? null,
       featured: offer.category === "Rifles",
-      specialOffer: true,
       quantity: null,
       stockNote: null,
-      brandIds: matchBrandIds(OFFER_BRAND_HINTS[offer.title], data.brands),
+      brandIds: matchBrandIds(OFFER_BRAND_HINTS[offer.title], brandRows),
       published: true,
-      sortOrder: products.length,
       createdAt: now,
       updatedAt: now,
     });
-  }
-
-  const offers = data.offers.map((offer) => {
-    if (offer.productId) return offer;
-    const match = products.find(
-      (product) => product.name.toLowerCase() === offer.title.toLowerCase(),
-    );
-    return match ? { ...offer, productId: match.id } : offer;
   });
 
-  return { ...data, products, offers };
+  return rows;
 }

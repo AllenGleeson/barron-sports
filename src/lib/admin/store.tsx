@@ -1,113 +1,70 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useContext, useMemo } from "react";
 import {
   ADMIN_STORE_VERSION,
-  normalizeAdminOffer,
+  normalizeAdminProduct,
   type AdminBrand,
-  type AdminOffer,
   type AdminProduct,
   type AdminService,
   type AdminStoreData,
 } from "@/lib/admin/models";
-import { isCatalogOnlyOffer } from "@/lib/admin/productOffer";
-import { createSeedStore, mergeSpecialOfferProducts } from "@/lib/admin/seed";
-import { SPECIAL_OFFERS } from "@/lib/site";
+import { createSeedStore } from "@/lib/admin/seed";
+import { writeJson } from "@/lib/browserStorage";
+import { useStorageItem } from "@/lib/useBrowserStorage";
 
 const STORAGE_KEY = "barron-admin-v1";
 
-type Collection = "brands" | "services" | "products" | "offers";
+type AdminRows = {
+  brands: AdminBrand;
+  services: AdminService;
+  products: AdminProduct;
+};
+
+export type AdminCollection = keyof AdminRows;
 
 type AdminStoreContextValue = {
   data: AdminStoreData;
-  ready: boolean;
   reset: () => void;
-  upsertBrand: (row: AdminBrand) => void;
-  upsertService: (row: AdminService) => void;
-  upsertProduct: (row: AdminProduct) => void;
-  patchProducts: (
+  /** Adds the row, or replaces the row with the same id. */
+  upsert: <C extends AdminCollection>(collection: C, row: AdminRows[C]) => void;
+  /** Applies `mutate` to each listed row and stamps `updatedAt`. */
+  patch: <C extends AdminCollection>(
+    collection: C,
     ids: string[],
-    mutate: (row: AdminProduct) => AdminProduct,
+    mutate: (row: AdminRows[C]) => AdminRows[C],
   ) => void;
-  patchBrands: (
-    ids: string[],
-    mutate: (row: AdminBrand) => AdminBrand,
-  ) => void;
-  patchServices: (
-    ids: string[],
-    mutate: (row: AdminService) => AdminService,
-  ) => void;
-  upsertOffer: (row: AdminOffer) => void;
-  patchOffers: (
-    ids: string[],
-    mutate: (row: AdminOffer) => AdminOffer,
-  ) => void;
-  remove: (collection: Collection, id: string) => void;
+  remove: (collection: AdminCollection, id: string) => void;
 };
 
 const AdminStoreContext = createContext<AdminStoreContextValue | null>(null);
 
-function readStore(): AdminStoreData {
+function parseStore(raw: string | null): AdminStoreData {
+  if (!raw) return createSeedStore();
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createSeedStore();
     const parsed = JSON.parse(raw) as AdminStoreData;
     if (parsed?.version !== ADMIN_STORE_VERSION) return createSeedStore();
     if (
       !Array.isArray(parsed.brands) ||
       !Array.isArray(parsed.services) ||
       !Array.isArray(parsed.products) ||
-      !Array.isArray(parsed.offers) ||
       !Array.isArray(parsed.categories)
     ) {
       return createSeedStore();
     }
-    return mergeSpecialOfferProducts({
-      ...parsed,
-      products: parsed.products.map((product) => ({
-        ...product,
-        specialOffer: Boolean(product.specialOffer),
-      })),
-      offers: parsed.offers
-        .filter((offer) => !isCatalogOnlyOffer(offer))
-        .map((offer) => {
-          const seeded = SPECIAL_OFFERS.find(
-            (row) => row.id === offer.id || row.title === offer.title,
-          );
-          return normalizeAdminOffer({
-            ...offer,
-            categoryLabel:
-              offer.categoryLabel ||
-              seeded?.category ||
-              parsed.categories.find((category) => category.id === offer.categoryId)
-                ?.name ||
-              "",
-          });
-        }),
-    });
+    return { ...parsed, products: parsed.products.map(normalizeAdminProduct) };
   } catch {
     return createSeedStore();
   }
 }
 
-export function readAdminStoreData(): AdminStoreData | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return readStore();
-  } catch {
-    return null;
-  }
-}
-
-function writeStore(data: AdminStoreData) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+/**
+ * The admin data saved in this browser (or the seed when nothing is saved).
+ * `null` during prerender and hydration.
+ */
+export function useAdminStoreData(): AdminStoreData | null {
+  const raw = useStorageItem(STORAGE_KEY);
+  return useMemo(() => (raw === undefined ? null : parseStore(raw)), [raw]);
 }
 
 export function newAdminId(prefix: string) {
@@ -118,89 +75,65 @@ export function newAdminId(prefix: string) {
   return `${prefix}-${random}`;
 }
 
+const normalizers: { [C in AdminCollection]?: (row: AdminRows[C]) => AdminRows[C] } = {
+  products: normalizeAdminProduct,
+};
+
 export function AdminStoreProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<AdminStoreData | null>(null);
-
-  useEffect(() => {
-    const store = readStore();
-    setData(store);
-    writeStore(store);
-  }, []);
-
-  const persist = useCallback((next: AdminStoreData) => {
-    setData(next);
-    writeStore(next);
-  }, []);
+  const data = useAdminStoreData();
 
   const value = useMemo<AdminStoreContextValue | null>(() => {
     if (!data) return null;
 
-    const replace = <T extends { id: string }>(rows: T[], row: T) => {
-      const index = rows.findIndex((item) => item.id === row.id);
-      if (index === -1) return [...rows, row];
-      const copy = rows.slice();
-      copy[index] = row;
-      return copy;
+    const persist = (next: AdminStoreData) => {
+      if (!writeJson(STORAGE_KEY, next)) {
+        // Most likely too many uploaded photos (they are stored inline for now).
+        window.alert(
+          "This change couldn't be saved because the browser's storage is full. " +
+            "Remove some uploaded photos or use image URLs instead, then try again.",
+        );
+      }
     };
 
     return {
       data,
-      ready: true,
       reset: () => persist(createSeedStore()),
-      upsertBrand: (row) => persist({ ...data, brands: replace(data.brands, row) }),
-      upsertService: (row) =>
-        persist({ ...data, services: replace(data.services, row) }),
-      upsertProduct: (row) =>
-        persist({ ...data, products: replace(data.products, row) }),
-      patchProducts: (ids, mutate) => {
+      upsert: (collection, row) => {
+        const normalize = normalizers[collection] as
+          | ((row: AdminRows[typeof collection]) => AdminRows[typeof collection])
+          | undefined;
+        const next = normalize ? normalize(row) : row;
+        const rows = data[collection] as (typeof next)[];
+        const index = rows.findIndex((item) => item.id === next.id);
+        const updated =
+          index === -1 ? [...rows, next] : rows.map((item, i) => (i === index ? next : item));
+        persist({ ...data, [collection]: updated });
+      },
+      patch: (collection, ids, mutate) => {
         const idSet = new Set(ids);
         const now = new Date().toISOString();
+        const rows = data[collection] as Parameters<typeof mutate>[0][];
         persist({
           ...data,
-          products: data.products.map((row) =>
+          [collection]: rows.map((row) =>
             idSet.has(row.id) ? { ...mutate(row), updatedAt: now } : row,
           ),
         });
       },
-      patchBrands: (ids, mutate) => {
-        const idSet = new Set(ids);
-        const now = new Date().toISOString();
-        persist({
-          ...data,
-          brands: data.brands.map((row) =>
-            idSet.has(row.id) ? { ...mutate(row), updatedAt: now } : row,
-          ),
-        });
+      remove: (collection, id) => {
+        const next = { ...data, [collection]: data[collection].filter((row) => row.id !== id) };
+        if (collection === "products") {
+          // Drop the deleted product from any package that contained it.
+          next.products = next.products.map((row) =>
+            row.productIds.includes(id)
+              ? { ...row, productIds: row.productIds.filter((item) => item !== id) }
+              : row,
+          );
+        }
+        persist(next);
       },
-      patchServices: (ids, mutate) => {
-        const idSet = new Set(ids);
-        const now = new Date().toISOString();
-        persist({
-          ...data,
-          services: data.services.map((row) =>
-            idSet.has(row.id) ? { ...mutate(row), updatedAt: now } : row,
-          ),
-        });
-      },
-      upsertOffer: (row) =>
-        persist({ ...data, offers: replace(data.offers, normalizeAdminOffer(row)) }),
-      patchOffers: (ids, mutate) => {
-        const idSet = new Set(ids);
-        const now = new Date().toISOString();
-        persist({
-          ...data,
-          offers: data.offers.map((row) =>
-            idSet.has(row.id) ? { ...mutate(row), updatedAt: now } : row,
-          ),
-        });
-      },
-      remove: (collection, id) =>
-        persist({
-          ...data,
-          [collection]: data[collection].filter((row) => row.id !== id),
-        }),
     };
-  }, [data, persist]);
+  }, [data]);
 
   if (!value) {
     return (

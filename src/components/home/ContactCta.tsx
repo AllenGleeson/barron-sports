@@ -1,21 +1,22 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
-import { site } from "@/lib/site";
+import { pageImages, site } from "@/lib/site";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export function ContactCta() {
   return (
     <section className="relative isolate overflow-hidden" aria-labelledby="contact-cta-heading">
       <CoverImage
-        src="https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=2200&q=80"
-        alt="Tall pine forest in low light"
+        src={pageImages.contactCta.src}
+        alt={pageImages.contactCta.alt}
         sizes="100vw"
       />
       <div className="absolute inset-0 bg-ink/78" aria-hidden="true" />
       <Container className="relative py-14 text-center lg:py-16">
-        <p className="text-[11px] uppercase tracking-[0.32em] text-brass">
+        <Eyebrow wide>
           Visit or call
-        </p>
+        </Eyebrow>
         <h2
           id="contact-cta-heading"
           className="mx-auto mt-5 max-w-3xl font-display text-4xl leading-tight text-cream sm:text-5xl"

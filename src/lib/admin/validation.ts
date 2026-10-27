@@ -87,6 +87,7 @@ export function scrollToFirstInvalid() {
 }
 
 export function validateProductDraft({
+  kind,
   name,
   slug,
   categoryId,
@@ -94,9 +95,15 @@ export function validateProductDraft({
   imageUrl,
   price,
   discount,
+  priceDisplay,
   quantity,
+  productIds,
+  specialOffer,
+  offerStartsAt,
+  offerEndsAt,
   takenSlugs,
 }: {
+  kind: "product" | "package";
   name: string;
   slug: string;
   categoryId: string;
@@ -104,33 +111,56 @@ export function validateProductDraft({
   imageUrl: string | null;
   price: string;
   discount: string;
+  priceDisplay: string | null;
   quantity: number | null;
+  productIds: string[];
+  specialOffer: boolean;
+  offerStartsAt: string | null;
+  offerEndsAt: string | null;
   takenSlugs: string[];
 }): FieldErrors {
-  const priceError = validateMoneyField(price, "Price");
-  const discountError = validateMoneyField(discount, "Discount price");
+  const isPackage = kind === "package";
+  const priceLabel = isPackage ? "Full price" : "Price";
+  const saleLabel = isPackage ? "Package price" : "Discount price";
+  const priceError = validateMoneyField(price, priceLabel);
+  const discountError = validateMoneyField(discount, saleLabel);
   let discountRule: string | undefined;
   if (!priceError && !discountError && discount.trim()) {
     if (!price.trim()) {
-      discountRule = "Set a regular price before adding a discount price.";
+      discountRule = `Set the ${priceLabel.toLowerCase()} before adding a ${saleLabel.toLowerCase()}.`;
     } else {
       const regular = Number(price.trim().replace(",", "."));
       const sale = Number(discount.trim().replace(",", "."));
       if (sale >= regular) {
-        discountRule = "Discount price must be lower than the regular price.";
+        discountRule = `${saleLabel} must be lower than the ${priceLabel.toLowerCase()}.`;
       }
     }
   }
 
+  // Special offers need something to show in the price slot on the offer card.
+  const offerPriceRule =
+    specialOffer && !price.trim() && !discount.trim() && !priceDisplay?.trim()
+      ? "Special offers need a price, or a price display such as Inquire for Pricing."
+      : undefined;
+  const dateRule =
+    offerStartsAt && offerEndsAt && new Date(offerEndsAt) < new Date(offerStartsAt)
+      ? "End date must be on or after the start date."
+      : undefined;
+
   return compactErrors({
     name: requiredText(name, "Name"),
     slug: validateSlugValue(slug || name, takenSlugs),
-    categoryId: categoryId ? undefined : "Category is required.",
-    summary: requiredText(summary, "Summary"),
-    imageUrl: validateAssetPath(imageUrl, "Image URL", false),
-    price: priceError,
+    categoryId: isPackage || categoryId ? undefined : "Category is required.",
+    summary: requiredText(summary, isPackage ? "Description" : "Summary"),
+    imageUrl: validateAssetPath(imageUrl, "Image", specialOffer),
+    productIds:
+      isPackage && productIds.length < 2
+        ? "Select at least two products for the package."
+        : undefined,
+    price: priceError || offerPriceRule,
     discount: discountError || discountRule,
     quantity: validateOptionalWholeNumber(quantity, "Quantity"),
+    offerEndsAt: dateRule,
   });
 }
 
@@ -176,85 +206,5 @@ export function validateBrandDraft({
     slug: validateSlugValue(slug || name, takenSlugs),
     logoUrl: validateAssetPath(logoUrl, "Logo URL", true),
     websiteUrl: validateHttpUrl(websiteUrl, "Website URL"),
-  });
-}
-
-export function validateOfferDraft({
-  kind,
-  title,
-  description,
-  categoryLabel,
-  imageUrl,
-  highlightsText,
-  productIds,
-  price,
-  originalPrice,
-  priceDisplay,
-  startsAt,
-  endsAt,
-}: {
-  kind: "offer" | "package";
-  title: string;
-  description: string;
-  categoryLabel: string;
-  imageUrl: string;
-  highlightsText: string;
-  productIds: string[];
-  price: string;
-  originalPrice: string;
-  priceDisplay: string | null;
-  startsAt: string | null;
-  endsAt: string | null;
-}): FieldErrors {
-  const isPackage = kind === "package";
-  const priceError = validateMoneyField(price, isPackage ? "Package price" : "Price");
-  const originalError = validateMoneyField(originalPrice, "Original price");
-  let originalRule: string | undefined;
-  if (!priceError && !originalError && originalPrice.trim()) {
-    if (!price.trim()) {
-      originalRule = isPackage
-        ? "Set the package price before adding an original price."
-        : "Set the offer price before adding an original price.";
-    } else {
-      const sale = Number(price.trim().replace(",", "."));
-      const original = Number(originalPrice.trim().replace(",", "."));
-      if (original <= sale) {
-        originalRule = "Original price must be higher than the offer price.";
-      }
-    }
-  }
-
-  const hasPrice = Boolean(price.trim() || priceDisplay?.trim());
-  const dateRule =
-    startsAt && endsAt && new Date(endsAt) < new Date(startsAt)
-      ? "End date must be on or after the start date."
-      : undefined;
-
-  return compactErrors({
-    title: requiredText(title, isPackage ? "Name" : "Title"),
-    description: isPackage ? requiredText(description, "Description") : undefined,
-    categoryLabel: requiredText(categoryLabel, "Category label"),
-    imageUrl: validateAssetPath(imageUrl, "Image URL", true),
-    highlights:
-      isPackage ||
-      highlightsText
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean).length
-        ? undefined
-        : "Add at least one highlight.",
-    productIds:
-      isPackage && productIds.length < 2
-        ? "Select at least two products for the package."
-        : undefined,
-    price:
-      priceError ||
-      (hasPrice
-        ? undefined
-        : isPackage
-          ? "Enter a package price or a price display such as Inquire for Pricing."
-          : "Enter a price or a price display such as Inquire for Pricing."),
-    originalPrice: originalError || originalRule,
-    endsAt: dateRule,
   });
 }

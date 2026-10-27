@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Barron Sports
 
-## Getting Started
+Website for Barron Sports, a shooting and outdoor equipment shop in Ennis, Co. Clare. Built with Next.js 16, React 19, Tailwind CSS v4 and TypeScript, and hosted on Vercel.
 
-First, run the development server:
+Contributor and coding conventions are in [AGENTS.md](AGENTS.md).
+
+## Run it locally
+
+Requires Node.js 20.9 or newer.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Optional: create `.env.local` with `NEXT_PUBLIC_ADMIN_PASSWORD=your-password` to change the admin password (the default is `barron`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Other commands:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | What it does |
+| --- | --- |
+| `npm run lint` | ESLint (there is no test suite) |
+| `npm run build` | Production build, the same one Vercel runs |
+| `npm run preview` | Production build, then serve it on http://localhost:3000 |
+| `npm run import-stock` | Regenerate `src/data/firearm-stock.ts` from `documents/products/Stock.xlsx` (needs Python 3) |
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The first deploy takes a few minutes in the Vercel dashboard:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Sign in at [vercel.com](https://vercel.com) with GitHub and choose **Add New → Project**.
+2. Import the `AllenGleeson/barron-sports` repository. Vercel detects Next.js; leave the build settings as they are.
+3. Under **Environment Variables**, add `NEXT_PUBLIC_ADMIN_PASSWORD` with a password of your choice. `NEXT_PUBLIC_` values are visible in the browser, so treat it as a convenience gate, not security.
+4. Click **Deploy**. The site gets a `*.vercel.app` address.
+
+After that:
+
+- Every push to `main` deploys the live site. Pushes to other branches get their own preview URL.
+- To use the shop's own domain, add it under **Project → Settings → Domains** and follow the DNS instructions there.
+- After changing an environment variable, redeploy (**Deployments → ⋯ → Redeploy**) for it to take effect.
+
+## How content and admin work today
+
+- Site content (products, offers, brands, services, course guides) lives in `src/lib/site.ts` and `src/lib/content/`. Changing it and pushing to `main` updates the live site.
+- `/admin` is a preview CMS. It saves to the browser it's used in (`localStorage`), so its edits are not visible to other visitors yet. The planned Supabase database will make admin edits live.
+- The course enrolment and payment flow is a preview too. It will use Supabase and Stripe once those are set up.

@@ -12,6 +12,7 @@ import {
   categoryCatalogs,
   categoryProducts,
   getCategory,
+  isFirearmCategory,
   MIN_PRODUCTS_FOR_SEARCH,
   site,
 } from "@/lib/site";
@@ -43,7 +44,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const products = categoryProducts[category.slug] ?? [];
   const showSearch = products.length >= MIN_PRODUCTS_FOR_SEARCH;
-  const showImage = category.slug !== "rifles" && category.slug !== "shotguns";
+  const showImage = !isFirearmCategory(category.slug);
   const listLayout = !showImage;
 
   const catalog = categoryCatalogs[category.slug];

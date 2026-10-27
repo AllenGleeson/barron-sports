@@ -51,7 +51,7 @@ export function DiscountConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="discount-confirm-title"
-        className="w-full max-w-2xl border border-line bg-moss p-5 sm:p-6"
+        className="my-auto w-full max-w-2xl border border-line bg-moss p-5 sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="text-[11px] uppercase tracking-[0.2em] text-brass">
@@ -109,7 +109,7 @@ export function DiscountConfirmModal({
                   >
                     <input
                       type="checkbox"
-                      className="mt-1 size-4 shrink-0 accent-[var(--brass)]"
+                      className="mt-1 size-4 shrink-0 accent-brass"
                       checked={included}
                       aria-label={`Change discount on ${row.name}`}
                       onChange={(event) => {

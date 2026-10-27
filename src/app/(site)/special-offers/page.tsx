@@ -3,7 +3,7 @@ import { SpecialOffersGrid } from "@/components/offers/SpecialOffersGrid";
 import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { offers } from "@/lib/site";
+import { pageImages, SPECIAL_OFFERS } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Special Offers",
@@ -18,17 +18,17 @@ export default function SpecialOffersPage() {
         eyebrow="While stock lasts"
         title="Special Offers"
         description="Selected packages and reduced-price equipment, available from the shop in Newpark, Ennis. Prices and stock can change — call before you travel."
-        image={{
-          src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2200&q=80",
-          alt: "Mountain country under a clearing sky",
-        }}
+        image={pageImages.offersHero}
       />
       <section className="bg-ink py-16 lg:py-24">
         <Container>
-          <SpecialOffersGrid offers={offers} />
-          <div className="mt-12">
+          <SpecialOffersGrid offers={SPECIAL_OFFERS} />
+          <div className="mt-12 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button href="/contact-us" variant="secondary">
               Enquire about an offer
+            </Button>
+            <Button href="/products" variant="ghost">
+              All products
             </Button>
           </div>
         </Container>

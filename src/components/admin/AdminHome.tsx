@@ -1,15 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { isPackage } from "@/lib/admin/models";
 import { useAdminStore } from "@/lib/admin/store";
 import { adminButton } from "@/components/admin/fields";
 
 export function AdminHome() {
   const { data, reset } = useAdminStore();
   const cards = [
+    {
+      href: "/admin/products/",
+      label: "Products",
+      count: data.products.filter((row) => !isPackage(row)).length,
+    },
+    {
+      href: "/admin/products/?view=offers",
+      label: "Special offers",
+      count: data.products.filter((row) => row.specialOffer).length,
+    },
+    {
+      href: "/admin/products/?view=packages",
+      label: "Packages",
+      count: data.products.filter(isPackage).length,
+    },
     { href: "/admin/services/", label: "Services", count: data.services.length },
-    { href: "/admin/products/", label: "Products", count: data.products.length },
-    { href: "/admin/offers/", label: "Offers", count: data.offers.length },
     { href: "/admin/brands/", label: "Brands", count: data.brands.length },
   ];
 
@@ -20,7 +34,7 @@ export function AdminHome() {
         Edit shop records in this browser. Changes are saved locally and do not
         publish to the live pages until a database is connected.
       </p>
-      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((card) => (
           <Link
             key={card.href}

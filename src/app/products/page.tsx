@@ -3,7 +3,7 @@ import { FeaturedCollectionCard } from "@/components/cards/FeaturedCollectionCar
 import { PageHero } from "@/components/interior/PageHero";
 import { ProductSearch } from "@/components/products/ProductSearch";
 import { Container } from "@/components/ui/Container";
-import { categories, getAllProducts } from "@/lib/site";
+import { categories, getAllProducts, pageImages } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Products",
@@ -20,10 +20,7 @@ export default function ProductsIndexPage() {
         compact
         title="Products"
         description="Rifles, shotguns, DogTrace systems, night vision, flashlights and accessories from the shop in Ennis."
-        image={{
-          src: "/home/shop-background.jpg",
-          alt: "Inside Barron Sports in Ennis, with glass cabinets of shooting equipment and outdoor clothing",
-        }}
+        image={pageImages.shopInterior}
       />
       <section className="bg-ink py-8 lg:py-10">
         <Container>

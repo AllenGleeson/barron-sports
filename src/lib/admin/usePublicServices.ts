@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import type { AdminService, AdminStoreData } from "@/lib/admin/models";
-import { readAdminStoreData } from "@/lib/admin/store";
+import { useAdminStoreData } from "@/lib/admin/store";
 import type { Service } from "@/lib/site";
 
 export function adminServiceToPublic(service: AdminService): Service {
@@ -23,13 +23,11 @@ export function publicServicesFromStore(store: AdminStoreData): Service[] {
     .map(adminServiceToPublic);
 }
 
-export function usePublicServices(fallback: Service[]) {
-  const [rows, setRows] = useState<Service[] | null>(null);
-
-  useEffect(() => {
-    const store = readAdminStoreData();
-    setRows(store ? publicServicesFromStore(store) : fallback);
-  }, [fallback]);
-
-  return rows;
+/**
+ * Published services from this browser's admin data.
+ * `null` until hydrated: callers render their static fallback until then.
+ */
+export function usePublicServices() {
+  const store = useAdminStoreData();
+  return useMemo(() => (store ? publicServicesFromStore(store) : null), [store]);
 }

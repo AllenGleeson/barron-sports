@@ -3,7 +3,7 @@ import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
-import { site } from "@/lib/site";
+import { pageImages, site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "About",
@@ -18,10 +18,7 @@ export default function AboutPage() {
         eyebrow="Ennis, Co. Clare"
         title="About Barron Sports"
         description="A specialist sporting and outdoor equipment shop, not a general sports warehouse."
-        image={{
-          src: "https://d2f0ora2gkri0g.cloudfront.net/bkpam2312266_dsc_0519.jpg",
-          alt: "Rifles and shotguns on the walls of Barron Sports in Ennis",
-        }}
+        image={pageImages.aboutHero}
       />
       <section className="bg-ink py-16 lg:py-24">
         <Container className="grid items-start gap-12 lg:grid-cols-[1.1fr_0.9fr]">

@@ -1,12 +1,13 @@
 "use client";
 
+import { AccordionList, Chevron, summaryClass } from "@/components/ui/Accordion";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
 import { usePublicServices } from "@/lib/admin/usePublicServices";
 import { services, type Service } from "@/lib/site";
 
 export function ServicesPreview() {
-  const fromStore = usePublicServices(services);
+  const fromStore = usePublicServices();
   const rows = fromStore ?? services;
 
   if (fromStore !== null && rows.length === 0) return null;
@@ -21,11 +22,11 @@ export function ServicesPreview() {
           Our Services
         </h2>
 
-        <ul className="divide-y divide-line-soft border-y border-line-soft lg:hidden">
+        <AccordionList className="lg:hidden">
           {rows.map((service) => (
             <li key={service.title} className="group/item -mx-2 px-2 transition-colors hover:bg-moss active:bg-moss">
               <details className="group" name="home-services">
-                <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-none transition-colors group-open:flex-col group-open:items-stretch group-open:gap-0 group-open:py-0 [&::-webkit-details-marker]:hidden">
+                <summary className={`${summaryClass} transition-colors group-open:flex-col group-open:items-stretch group-open:gap-0 group-open:py-0`}>
                   <div className="relative h-[4.5rem] w-24 shrink-0 overflow-hidden bg-panel group-open:aspect-[4/3] group-open:h-auto group-open:w-full">
                     <CoverImage
                       src={service.image.src}
@@ -41,14 +42,7 @@ export function ServicesPreview() {
                     <h3 className="min-w-0 flex-1 font-display text-xl leading-snug text-cream transition-colors group-hover/item:text-brass">
                       {service.title}
                     </h3>
-                    <svg
-                      viewBox="0 0 12 12"
-                      className="h-3.5 w-3.5 shrink-0 text-brass transition duration-200 group-open:rotate-180 group-hover/item:text-[#dcc392]"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.2" />
-                    </svg>
+                    <Chevron />
                   </div>
                 </summary>
                 <p className="pb-4 text-sm leading-relaxed text-parchment">
@@ -57,7 +51,7 @@ export function ServicesPreview() {
               </details>
             </li>
           ))}
-        </ul>
+        </AccordionList>
 
         <div className="hidden gap-4 lg:grid lg:grid-cols-12">
           {rows.slice(0, 10).map((service, index) => (

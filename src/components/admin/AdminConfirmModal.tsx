@@ -38,7 +38,7 @@ export function AdminConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-confirm-title"
-        className="w-full max-w-lg border border-line bg-moss p-5 sm:p-6"
+        className="my-auto w-full max-w-lg border border-line bg-moss p-5 sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="text-[11px] uppercase tracking-[0.2em] text-brass">

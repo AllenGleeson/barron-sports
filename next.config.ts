@@ -1,18 +1,11 @@
 import type { NextConfig } from "next";
 
-function sanitizeBasePath(raw: string | undefined) {
-  const value = (raw ?? "").trim();
-  if (!value || value === "/") return "";
-  const withSlash = value.startsWith("/") ? value : `/${value}`;
-  return withSlash.replace(/\/+$/, "");
-}
-
-const pagesBasePath = sanitizeBasePath(process.env.PAGES_BASE_PATH);
-
 const nextConfig: NextConfig = {
-  output: "export",
   trailingSlash: true,
   images: {
+    // Admin users can paste any image URL (or upload a data: URL), so images
+    // are served as-is rather than through the optimiser, which only accepts
+    // the hosts listed below and counts against Vercel's image quota.
     unoptimized: true,
     remotePatterns: [
       {
@@ -41,13 +34,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  env: {
-    NEXT_PUBLIC_BASE_PATH: pagesBasePath,
-  },
 };
-
-if (pagesBasePath) {
-  nextConfig.basePath = pagesBasePath;
-}
 
 export default nextConfig;

@@ -1,5 +1,6 @@
 import { CoverImage } from "@/components/media/CoverImage";
 import { Container } from "@/components/ui/Container";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 type PageHeroProps = {
   eyebrow?: string;
@@ -29,7 +30,7 @@ export function PageHero({
       >
         <div className="max-w-3xl">
           {eyebrow ? (
-            <p className="text-[11px] uppercase tracking-[0.32em] text-brass">{eyebrow}</p>
+            <Eyebrow wide>{eyebrow}</Eyebrow>
           ) : null}
           <h1 className={`font-display text-5xl leading-tight text-cream sm:text-6xl ${compact ? "mt-2" : "mt-4"}`}>
             {title}

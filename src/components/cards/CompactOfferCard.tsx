@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 import { CoverImage } from "@/components/media/CoverImage";
 import { offerHasViewLink, offerHref, type SpecialOffer } from "@/lib/site";
 
@@ -36,12 +36,11 @@ export function CompactOfferCard({ offer }: { offer: SpecialOffer }) {
         )}
       </p>
       {offerHasViewLink(offer) ? (
-        <Link
-          href={offerHref(offer)}
-          className="mx-auto mt-auto pt-4 inline-flex min-w-[10.5rem] items-center justify-center bg-brass px-8 py-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-ink transition-colors hover:bg-[#dcc392]"
-        >
-          View Offer
-        </Link>
+        <div className="mt-auto flex justify-center pt-4">
+          <Button href={offerHref(offer)} size="sm" className="min-w-[10.5rem]">
+            View Offer
+          </Button>
+        </div>
       ) : null}
     </article>
   );
