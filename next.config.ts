@@ -32,6 +32,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "cdn-new.pard.com",
       },
+      {
+        // Supabase Storage (admin uploads).
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
     ],
   },
 };

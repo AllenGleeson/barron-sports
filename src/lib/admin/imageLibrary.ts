@@ -1,117 +1,124 @@
+import { compressImage } from "@/lib/admin/imageCompression";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
+
 /**
- * The admin image gallery.
+ * The admin image gallery, stored in Supabase.
  *
- * Editors only use the `ImageLibrary` interface, so the storage behind it can
- * change without touching them. For now `imageLibrary` keeps images in this
- * browser's IndexedDB, and each image's `url` is a compressed `data:` URL that
- * can be saved straight into a record's `imageUrl`.
- *
- * Planned live version (needs the Vercel + Supabase host, see AGENTS.md):
- * upload to a Supabase Storage bucket, list rows from an `images` table, and
- * return the bucket's public URL as `url`. Swap the export at the bottom.
+ * Files go to the public `images` Storage bucket after being compressed in
+ * the browser; a row in the `images` table lists each one. Records such as
+ * products only store the file's public URL. Schema and access rules:
+ * supabase/migrations/20261028000000_image_uploads.sql.
  */
+
+const BUCKET = "images";
 
 export type LibraryImage = {
   id: string;
   name: string;
-  /** Saved into a record's `imageUrl` when the image is chosen. */
+  /** Public URL, saved into a record's `imageUrl` when the image is chosen. */
   url: string;
-  width: number;
-  height: number;
+  path: string;
+  width: number | null;
+  height: number | null;
+  /** Stored size after compression. */
+  bytes: number | null;
   createdAt: string;
 };
 
-export type ImageLibrary = {
-  list: () => Promise<LibraryImage[]>;
-  upload: (file: File) => Promise<LibraryImage>;
-  remove: (id: string) => Promise<void>;
+export type UploadResult = LibraryImage & {
+  /** Size of the file before compression, for showing the saving. */
+  originalBytes: number;
 };
 
-/** Largest side of an uploaded image after resizing, in pixels. */
-const MAX_DIMENSION = 1600;
-const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
-const QUALITY = 0.85;
+type ImageRow = {
+  id: string;
+  path: string;
+  name: string;
+  width: number | null;
+  height: number | null;
+  bytes: number | null;
+  created_at: string;
+};
 
-/** Resizes an image file and re-encodes it as WebP (keeps transparency). */
-async function compressImage(file: File) {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("That file isn't an image.");
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error("That image is over 20 MB. Choose a smaller one.");
-  }
-
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch {
-    throw new Error("That image couldn't be read. Try a JPG, PNG or WebP file.");
-  }
-
-  const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
-  const width = Math.round(bitmap.width * scale);
-  const height = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close();
-
-  // Browsers without WebP encoding fall back to PNG, which still works.
-  return { url: canvas.toDataURL("image/webp", QUALITY), width, height };
+function client() {
+  const supabase = getSupabaseBrowser();
+  if (!supabase) throw new Error("Supabase isn't configured, so images can't be stored.");
+  return supabase;
 }
 
-const DB_NAME = "barron-images";
-const STORE = "images";
-
-function openDb() {
-  return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => {
-      request.result.createObjectStore(STORE, { keyPath: "id" });
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+function fromRow(row: ImageRow): LibraryImage {
+  const url = client().storage.from(BUCKET).getPublicUrl(row.path).data.publicUrl;
+  return {
+    id: row.id,
+    name: row.name,
+    url,
+    path: row.path,
+    width: row.width,
+    height: row.height,
+    bytes: row.bytes,
+    createdAt: row.created_at,
+  };
 }
 
-async function withStore<T>(
-  mode: IDBTransactionMode,
-  run: (store: IDBObjectStore) => IDBRequest<T>,
-) {
-  const db = await openDb();
-  try {
-    return await new Promise<T>((resolve, reject) => {
-      const request = run(db.transaction(STORE, mode).objectStore(STORE));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+export const imageLibrary = {
+  async list(): Promise<LibraryImage[]> {
+    const { data, error } = await client()
+      .from("images")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as ImageRow[]).map(fromRow);
+  },
+
+  async upload(file: File): Promise<UploadResult> {
+    const supabase = client();
+    const image = await compressImage(file);
+    const path = `uploads/${crypto.randomUUID()}.${image.extension}`;
+
+    const stored = await supabase.storage.from(BUCKET).upload(path, image.blob, {
+      contentType: image.contentType,
+      // File names are unique, so browsers and the CDN can cache them for a year.
+      cacheControl: "31536000",
     });
-  } finally {
-    db.close();
-  }
-}
+    if (stored.error) throw new Error(stored.error.message);
 
-const localImageLibrary: ImageLibrary = {
-  async list() {
-    const rows = await withStore<LibraryImage[]>("readonly", (store) => store.getAll());
-    return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const { data, error } = await supabase
+      .from("images")
+      .insert({
+        path,
+        name: file.name,
+        width: image.width,
+        height: image.height,
+        bytes: image.blob.size,
+        content_type: image.contentType,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      // Don't leave an unlisted file behind.
+      await supabase.storage.from(BUCKET).remove([path]);
+      throw new Error(error.message);
+    }
+    return { ...fromRow(data as ImageRow), originalBytes: file.size };
   },
-  async upload(file) {
-    const { url, width, height } = await compressImage(file);
-    const image: LibraryImage = {
-      id: `img-${crypto.randomUUID()}`,
-      name: file.name,
-      url,
-      width,
-      height,
-      createdAt: new Date().toISOString(),
-    };
-    await withStore("readwrite", (store) => store.put(image));
-    return image;
-  },
-  async remove(id) {
-    await withStore("readwrite", (store) => store.delete(id));
+
+  async remove(image: LibraryImage) {
+    const supabase = client();
+    const stored = await supabase.storage.from(BUCKET).remove([image.path]);
+    if (stored.error) throw new Error(stored.error.message);
+    const { error } = await supabase.from("images").delete().eq("id", image.id);
+    if (error) throw new Error(error.message);
   },
 };
 
-export const imageLibrary: ImageLibrary = localImageLibrary;
+/** "1.2 MB" / "184 KB". */
+export function formatBytes(bytes: number) {
+  return bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+/** True for URLs of files in the gallery bucket. */
+export function isLibraryUrl(url: string) {
+  return url.includes(`/storage/v1/object/public/${BUCKET}/`);
+}

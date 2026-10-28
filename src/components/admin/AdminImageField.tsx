@@ -2,8 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminField, AdminInput, adminButton } from "@/components/admin/fields";
+import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import { AdminImagePreview } from "@/components/admin/AdminImagePreview";
-import { imageLibrary, type LibraryImage } from "@/lib/admin/imageLibrary";
+import { ACCEPTED_IMAGE_TYPES, MAX_INPUT_BYTES } from "@/lib/admin/imageCompression";
+import {
+  formatBytes,
+  imageLibrary,
+  isLibraryUrl,
+  type LibraryImage,
+  type UploadResult,
+} from "@/lib/admin/imageLibrary";
 import { useAdminStore } from "@/lib/admin/store";
 
 type Source = "url" | "gallery" | "upload";
@@ -38,12 +46,11 @@ export function AdminImageField({
   hint,
   error,
 }: AdminImageFieldProps) {
-  const isUploaded = value.startsWith("data:");
-  const [source, setSource] = useState<Source>(isUploaded ? "upload" : "url");
+  const [source, setSource] = useState<Source>(isLibraryUrl(value) ? "gallery" : "url");
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [uploadedName, setUploadedName] = useState("");
+  const [lastUpload, setLastUpload] = useState<UploadResult | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   function choose(next: Source) {
@@ -58,7 +65,7 @@ export function AdminImageField({
     setUploadError("");
     try {
       const image = await imageLibrary.upload(file);
-      setUploadedName(image.name);
+      setLastUpload(image);
       onChange(image.url);
     } catch (reason) {
       setUploadError(reason instanceof Error ? reason.message : "Upload failed.");
@@ -87,7 +94,7 @@ export function AdminImageField({
         <input
           ref={fileInput}
           type="file"
-          accept="image/*"
+          accept={ACCEPTED_IMAGE_TYPES}
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];
@@ -101,7 +108,7 @@ export function AdminImageField({
             aria-label={`${label} URL`}
             placeholder="https://… or /products/…"
             invalid={Boolean(error)}
-            value={isUploaded ? "" : value}
+            value={value}
             onChange={(event) => onChange(event.target.value)}
           />
         ) : null}
@@ -120,21 +127,29 @@ export function AdminImageField({
         ) : null}
 
         {source === "upload" ? (
-          <SourceNote>
-            {uploading
-              ? "Uploading…"
-              : isUploaded
-                ? `Using ${uploadedName || "an uploaded photo"}.`
-                : "No photo uploaded yet."}{" "}
-            <button
-              type="button"
-              className={adminButton.ghost}
-              disabled={uploading}
-              onClick={() => fileInput.current?.click()}
-            >
-              {isUploaded ? "Choose another" : "Choose a photo"}
-            </button>
-          </SourceNote>
+          <>
+            <SourceNote>
+              {uploading
+                ? "Compressing and uploading…"
+                : lastUpload && lastUpload.url === value
+                  ? `Using ${lastUpload.name}: ${lastUpload.width}×${lastUpload.height}, ${formatBytes(
+                      lastUpload.bytes ?? 0,
+                    )} (was ${formatBytes(lastUpload.originalBytes)}).`
+                  : "No photo uploaded yet."}{" "}
+              <button
+                type="button"
+                className={adminButton.ghost}
+                disabled={uploading}
+                onClick={() => fileInput.current?.click()}
+              >
+                {lastUpload ? "Choose another" : "Choose a photo"}
+              </button>
+            </SourceNote>
+            <p className="mt-1 text-xs text-stone">
+              JPG, PNG, WebP, AVIF, GIF or HEIC up to {MAX_INPUT_BYTES / 1024 / 1024} MB. Photos are
+              resized to fit 1600px and compressed before upload.
+            </p>
+          </>
         ) : null}
 
         {uploadError ? (
@@ -188,10 +203,24 @@ function useSiteImages() {
     ];
     const usable = urls.filter(
       (url): url is string =>
-        typeof url === "string" && url.trim() !== "" && !url.startsWith("data:"),
+        typeof url === "string" &&
+        url.trim() !== "" &&
+        !url.startsWith("data:") &&
+        // Uploads are listed in their own section.
+        !isLibraryUrl(url),
     );
     return [...new Set(usable)];
   }, [data]);
+}
+
+/** Names of the admin records that use an image URL. */
+function useImageUsage() {
+  const { data } = useAdminStore();
+  return (url: string) => [
+    ...data.products.filter((row) => row.imageUrl === url).map((row) => row.name),
+    ...data.services.filter((row) => row.imageUrl === url).map((row) => row.title),
+    ...data.brands.filter((row) => row.logoUrl === url).map((row) => row.name),
+  ];
 }
 
 function ImageGalleryModal({
@@ -205,14 +234,19 @@ function ImageGalleryModal({
 }) {
   const [uploads, setUploads] = useState<LibraryImage[] | null>(null);
   const [loadError, setLoadError] = useState("");
+  const [deleting, setDeleting] = useState<LibraryImage | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const siteImages = useSiteImages();
+  const usedBy = useImageUsage();
 
   useEffect(() => {
     let active = true;
     imageLibrary
       .list()
       .then((rows) => active && setUploads(rows))
-      .catch(() => active && setLoadError("The gallery couldn't be opened in this browser."));
+      .catch(
+        (error: Error) => active && setLoadError(`The gallery couldn't be loaded: ${error.message}`),
+      );
     return () => {
       active = false;
     };
@@ -227,8 +261,14 @@ function ImageGalleryModal({
   }, [onClose]);
 
   async function removeUpload(image: LibraryImage) {
-    await imageLibrary.remove(image.id);
-    setUploads((rows) => rows?.filter((row) => row.id !== image.id) ?? null);
+    setDeleteError("");
+    try {
+      await imageLibrary.remove(image);
+      setUploads((rows) => rows?.filter((row) => row.id !== image.id) ?? null);
+    } catch (error) {
+      setDeleteError(`${image.name} couldn't be deleted: ${(error as Error).message}`);
+    }
+    setDeleting(null);
   }
 
   return (
@@ -257,6 +297,7 @@ function ImageGalleryModal({
         </div>
 
         <GallerySection title="Uploaded photos">
+          {deleteError ? <p className="mb-3 text-sm text-red-300">{deleteError}</p> : null}
           {loadError ? (
             <p className="text-sm text-red-300">{loadError}</p>
           ) : uploads === null ? (
@@ -272,9 +313,10 @@ function ImageGalleryModal({
                   key={image.id}
                   url={image.url}
                   label={image.name}
+                  detail={image.bytes ? formatBytes(image.bytes) : undefined}
                   selected={image.url === selectedUrl}
                   onSelect={() => onSelect(image.url)}
-                  onRemove={() => void removeUpload(image)}
+                  onRemove={() => setDeleting(image)}
                 />
               ))}
             </GalleryGrid>
@@ -300,10 +342,27 @@ function ImageGalleryModal({
         </GallerySection>
 
         <p className="mt-6 text-xs leading-relaxed text-stone">
-          Preview: uploads are kept in this browser only. The live site will store them
-          in Supabase.
+          Uploads are stored online and shared by everyone who uses the admin.
         </p>
       </div>
+      {deleting ? (
+        <AdminConfirmModal
+          eyebrow="Confirm delete"
+          title={`Delete ${deleting.name}?`}
+          confirmLabel="Delete image"
+          danger
+          onCancel={() => setDeleting(null)}
+          onConfirm={() => void removeUpload(deleting)}
+        >
+          <p>The file is removed from storage. This cannot be undone.</p>
+          {usedBy(deleting.url).length > 0 ? (
+            <p>
+              It&apos;s still used by {usedBy(deleting.url).join(", ")}. Those will show no image
+              until you choose another.
+            </p>
+          ) : null}
+        </AdminConfirmModal>
+      ) : null}
     </div>
   );
 }
@@ -334,12 +393,14 @@ function GalleryGrid({ children }: { children: React.ReactNode }) {
 function GalleryTile({
   url,
   label,
+  detail,
   selected,
   onSelect,
   onRemove,
 }: {
   url: string;
   label: string;
+  detail?: string;
   selected: boolean;
   onSelect: () => void;
   onRemove?: () => void;
@@ -362,7 +423,10 @@ function GalleryTile({
           loading="lazy"
           className="aspect-[4/3] w-full object-cover"
         />
-        <span className="block truncate px-2 py-1.5 text-xs text-parchment">{label}</span>
+        <span className="block truncate px-2 py-1.5 text-xs text-parchment">
+          {label}
+          {detail ? <span className="text-stone"> · {detail}</span> : null}
+        </span>
       </button>
       {onRemove ? (
         <button
