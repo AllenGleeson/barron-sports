@@ -1,7 +1,7 @@
 /** Rich category pages (DogTrace, accessories, night vision, flashlights). */
 
 export const dogTraceCatalog = {
-  logo: "https://d2f0ora2gkri0g.cloudfront.net/6c/55/6c5599ee-c1dc-4d88-ab4e-6b31cc995eca.png",
+  logo: "/catalogues/dogtrace/logo.webp",
   appHref: "https://play.google.com/store/apps/details?id=cz.vnt.dogtrace.gps",
   exclusive:
     "Free extra-tough protective sleeving is added to all our collars. Only available at Barron Sports.",
@@ -57,7 +57,7 @@ export const dogTraceCatalog = {
       name: "DOG GPS X20",
       price: "€475",
       image: {
-        src: "https://d2f0ora2gkri0g.cloudfront.net/25/dd/25ddbf2c-16bc-4628-88ac-1a3f33c0e5b1.jpg",
+        src: "/catalogues/dogtrace/dog-gps-x20.webp",
         alt: "DogTrace DOG GPS X20 orange starter set",
       },
       summary:
@@ -95,7 +95,7 @@ export const dogTraceCatalog = {
       name: "DOG GPS Finder X30T",
       price: "From €649",
       image: {
-        src: "https://d2f0ora2gkri0g.cloudfront.net/2a/a7/2aa7a223-dfa6-4d30-bc41-5a2366b8edec.jpg",
+        src: "/catalogues/dogtrace/dog-gps-finder-x30t.webp",
         alt: "DogTrace DOG GPS X30T phone-linked tracking set",
       },
       summary:
@@ -146,7 +146,7 @@ export const dogTraceCatalog = {
       name: "d-control Professional 2000",
       price: "From under €100 to €280",
       image: {
-        src: "https://d2f0ora2gkri0g.cloudfront.net/bf/75/bf754dd9-6740-4890-83d3-d394b7bceb4c.jpg",
+        src: "/catalogues/dogtrace/d-control-professional-2000.webp",
         alt: "DogTrace d-control Professional 2000 orange training collar",
       },
       summary:
@@ -204,7 +204,7 @@ export const accessoriesCatalog: CategoryCatalogContent = {
       name: "Sights",
       summary: "Full line of Vortex sights at unbeatable prices.",
       image: {
-        src: "https://d2f0ora2gkri0g.cloudfront.net/7e/d4/7ed4aa28-ac94-4f6b-baf8-c47d3d3b4192.jpg",
+        src: "/catalogues/accessories/sights.webp",
         alt: "Vortex riflescope",
       },
     },
@@ -215,7 +215,7 @@ export const accessoriesCatalog: CategoryCatalogContent = {
       href: "/products/dogtrace",
       cta: "View DogTrace",
       image: {
-        src: "https://d2f0ora2gkri0g.cloudfront.net/25/dd/25ddbf2c-16bc-4628-88ac-1a3f33c0e5b1.jpg",
+        src: "/catalogues/dogtrace/dog-gps-x20.webp",
         alt: "DogTrace GPS X20 tracking set",
       },
     },
@@ -225,7 +225,7 @@ export const accessoriesCatalog: CategoryCatalogContent = {
       summary:
         "Scope rings and mounts, moderators, lights, aftermarket stocks, barrel threading and more.",
       image: {
-        src: "https://d2f0ora2gkri0g.cloudfront.net/df/02/df02345d-8686-4776-b3ce-ce0f695a4690.jpg",
+        src: "/catalogues/accessories/rings-mounts-and-more.webp",
         alt: "Scope rings and mounts",
       },
     },
@@ -239,7 +239,7 @@ export const accessoriesCatalog: CategoryCatalogContent = {
       eyebrow: "Including next-day delivery",
       images: [
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/a2/4f/a24ff790-6e38-4573-99e7-3f81293a5ed3.jpg",
+          src: "/catalogues/accessories/champion-workhorse.webp",
           alt: "Champion Workhorse clay trap",
         },
       ],
@@ -260,7 +260,7 @@ export const nightVisionCatalog: CategoryCatalogContent = {
       name: "InfiRay Tube-TD50L",
       images: [
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/b2/ed/b2ed1a7e-fe9f-417f-b727-3fd0b8c977d5.png",
+          src: "/catalogues/night-vision-optics/infiray-tube-td50l.webp",
           alt: "InfiRay Tube-TD50L digital night vision riflescope",
         },
       ],
@@ -274,7 +274,7 @@ export const nightVisionCatalog: CategoryCatalogContent = {
       name: "Pixfra",
       images: [
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/99/b3/99b3daa6-1da7-4a0c-a6d8-9e4f37689af4.png",
+          src: "/catalogues/night-vision-optics/pixfra.webp",
           alt: "Pixfra thermal camera",
         },
       ],
@@ -286,7 +286,7 @@ export const nightVisionCatalog: CategoryCatalogContent = {
       name: "Pulsar Axion 2 XQ35 Pro",
       images: [
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/36/50/3650fe40-e709-437c-aa4e-63da2e9a903e.png",
+          src: "/catalogues/night-vision-optics/pulsar-axion-2-xq35-pro.webp",
           alt: "Pulsar Axion 2 XQ35 Pro thermal spotter",
         },
       ],
@@ -314,11 +314,11 @@ export const flashlightsCatalog: CategoryCatalogContent = {
       eyebrow: "Illuminate your hunt",
       images: [
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/26/08/260854f7-85af-41dc-be7e-da3d293b6686.gif",
+          src: "/catalogues/flashlights/tri-colour-flashlight.webp",
           alt: "Tri-colour hunting flashlight in use",
         },
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/4d/38/4d383f28-ddfb-4acf-8b9d-3a8f76b7c7f4.png",
+          src: "/catalogues/flashlights/tri-colour-flashlight-2.webp",
           alt: "Tri-colour hunting flashlight",
         },
       ],
@@ -332,11 +332,11 @@ export const flashlightsCatalog: CategoryCatalogContent = {
       eyebrow: "For use with night vision scopes",
       images: [
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/83/8f/838f34d8-1468-4514-9c7d-813a7b56c434.JPG",
+          src: "/catalogues/flashlights/ir-torch.webp",
           alt: "IR torch mounted for night vision",
         },
         {
-          src: "https://d2f0ora2gkri0g.cloudfront.net/b8/bd/b8bdad65-e76b-46d3-8beb-daefcea48c76.jpg",
+          src: "/catalogues/flashlights/ir-torch-2.webp",
           alt: "Hunting flashlight on a rifle",
         },
       ],

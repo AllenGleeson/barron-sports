@@ -23,7 +23,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["Vortex"],
       href: "/products/accessories#sights",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/7e/d4/7ed4aa28-ac94-4f6b-baf8-c47d3d3b4192.jpg",
+        "/catalogues/accessories/sights.webp",
       summary: "Full line of Vortex sights at competitive prices.",
     },
     {
@@ -41,7 +41,7 @@ export const categoryProducts: Record<string, Product[]> = {
       originalPrice: "€225",
       href: "/products/accessories",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/6e/ad/6ead7c06-ffd5-4cd0-8d0e-8aeb0698e482.jpeg",
+        "/offers/barron-sports-ao-illuminated-scope.webp",
       summary:
         "Mil-dot reticle 6-24x50, 1-inch tube with illumination, includes mounting rings.",
     },
@@ -51,7 +51,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["Howard Leight by Honeywell"],
       href: "/products/accessories",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/47/d5/47d5386e-8c4d-4ea2-b126-6a17a9c5ff01.png",
+        "/offers/impact-electronic-ear-muffs.webp",
       summary:
         "Adjustable headband, shuts off impulse noise over 82 dB, 4X sound amplification.",
     },
@@ -59,7 +59,7 @@ export const categoryProducts: Record<string, Product[]> = {
       name: "Scope rings, mounts & moderators",
       href: "/products/accessories#more",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/df/02/df02345d-8686-4776-b3ce-ce0f695a4690.jpg",
+        "/catalogues/accessories/rings-mounts-and-more.webp",
       summary:
         "Rings, mounts, lights, aftermarket stocks and barrel threading arranged in-store.",
     },
@@ -81,7 +81,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["DogTrace"],
       href: "/products/dogtrace#x20",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/25/dd/25ddbf2c-16bc-4628-88ac-1a3f33c0e5b1.jpg",
+        "/catalogues/dogtrace/dog-gps-x20.webp",
       summary:
         "Collar, handset and chargers. Locate dogs up to 20 km. Additional collars €250.",
     },
@@ -91,7 +91,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["DogTrace"],
       href: "/products/dogtrace#range-x25",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/25/dd/25ddbf2c-16bc-4628-88ac-1a3f33c0e5b1.jpg",
+        "/catalogues/dogtrace/dog-gps-x20.webp",
       summary:
         "X25 without training €525. X25T with training function €575. Additional collars from €275.",
     },
@@ -101,7 +101,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["DogTrace"],
       href: "/products/dogtrace#x30t",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/2a/a7/2aa7a223-dfa6-4d30-bc41-5a2366b8edec.jpg",
+        "/catalogues/dogtrace/dog-gps-finder-x30t.webp",
       summary:
         "Phone-linked sets. X30 €649, X30T with training €699. Maps, routes and barking indication via the DogTrace app.",
     },
@@ -111,7 +111,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["DogTrace"],
       href: "/products/dogtrace#d-control",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/bf/75/bf754dd9-6740-4890-83d3-d394b7bceb4c.jpg",
+        "/catalogues/dogtrace/d-control-professional-2000.webp",
       summary:
         "Electronic training collars with over 30 models, from under €100 up to the Pro 2000.",
     },
@@ -122,7 +122,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["InfiRay"],
       href: "/products/night-vision-optics#infiray-td50l",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/b2/ed/b2ed1a7e-fe9f-417f-b727-3fd0b8c977d5.png",
+        "/catalogues/night-vision-optics/infiray-tube-td50l.webp",
       summary:
         "Digital night vision riflescope in a traditional day-optic form. 13+ hour runtime, IP67, designed for bolt-action rifles.",
     },
@@ -131,7 +131,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["Pixfra"],
       href: "/products/night-vision-optics#pixfra",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/99/b3/99b3daa6-1da7-4a0c-a6d8-9e4f37689af4.png",
+        "/catalogues/night-vision-optics/pixfra.webp",
       summary:
         "Proprietary heat-detection thermal cameras for identifying quarry and observing wildlife in complete darkness.",
     },
@@ -140,7 +140,7 @@ export const categoryProducts: Record<string, Product[]> = {
       brands: ["Pulsar"],
       href: "/products/night-vision-optics#pulsar-axion",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/36/50/3650fe40-e709-437c-aa4e-63da2e9a903e.png",
+        "/catalogues/night-vision-optics/pulsar-axion-2-xq35-pro.webp",
       summary:
         "Compact thermal spotter with AMOLED HD display, swappable APS3 battery and 16 GB internal memory.",
     },
@@ -149,7 +149,7 @@ export const categoryProducts: Record<string, Product[]> = {
       price: "From €599",
       href: "/products/night-vision-optics",
       brands: ["Pard"],
-      image: "https://cdn-new.pard.com/mall/landing/product/leopard-256/carousel/01.png",
+      image: "/offers/pard-thermal-image-spotters.webp",
       summary:
         "High-resolution thermal imaging optics in a compact handheld design for field tracking.",
     },
@@ -160,7 +160,7 @@ export const categoryProducts: Record<string, Product[]> = {
       price: "€149",
       href: "/products/flashlights#tri-colour",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/4d/38/4d383f28-ddfb-4acf-8b9d-3a8f76b7c7f4.png",
+        "/catalogues/flashlights/tri-colour-flashlight-2.webp",
       summary:
         "50 mm front lens, focusable beam to 400 m, red / green / white without refocusing. Dimmable, aluminium body, rechargeable battery included.",
     },
@@ -169,7 +169,7 @@ export const categoryProducts: Record<string, Product[]> = {
       price: "€159",
       href: "/products/flashlights#ir-torch",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/b8/bd/b8bdad65-e76b-46d3-8beb-daefcea48c76.jpg",
+        "/catalogues/flashlights/ir-torch-2.webp",
       summary:
         "White, IR850 and IR940 beams for digital night vision. High output or near-covert illumination, with accessories and fast mode switching.",
     },
@@ -188,7 +188,7 @@ export const categoryProducts: Record<string, Product[]> = {
       featured: true,
       href: "/products/rifles",
       image:
-        "https://d2f0ora2gkri0g.cloudfront.net/63/f0/63f091be-4fce-4925-b832-45a38dfd4efb.png",
+        "/offers/howa-1500.webp",
       summary:
         ".223 · Sporter package with Nikko Stirling Diamond Long Range 4-16x50, RCC moderator, bipod and rifle bag.",
     },

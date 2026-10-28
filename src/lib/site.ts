@@ -46,15 +46,15 @@ export const pageImages = {
     alt: "Inside Barron Sports in Ennis, with glass cabinets of shooting equipment and outdoor clothing",
   },
   aboutHero: {
-    src: "https://d2f0ora2gkri0g.cloudfront.net/bkpam2312266_dsc_0519.jpg",
+    src: "/pages/about-hero.webp",
     alt: "Rifles and shotguns on the walls of Barron Sports in Ennis",
   },
   aboutPreview: {
-    src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80",
+    src: "/pages/about-preview.webp",
     alt: "Still lake and wooded hills in the west of Ireland",
   },
   brandsHero: {
-    src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2200&q=80",
+    src: "/pages/brands-hero.webp",
     alt: "Sun through a mature woodland canopy",
   },
   contactHero: {
@@ -62,11 +62,11 @@ export const pageImages = {
     alt: "Fanore Beach on the Atlantic coast of County Clare",
   },
   contactCta: {
-    src: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=2200&q=80",
+    src: "/pages/contact-cta.webp",
     alt: "Tall pine forest in low light",
   },
   offersHero: {
-    src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2200&q=80",
+    src: "/pages/offers-hero.webp",
     alt: "Mountain country under a clearing sky",
   },
 } as const;

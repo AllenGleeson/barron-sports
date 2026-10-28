@@ -23,7 +23,7 @@ export const SPECIAL_OFFERS: SpecialOffer[] = [
     category: "Rifles",
     title: "Howa 1500",
     image:
-      "https://d2f0ora2gkri0g.cloudfront.net/63/f0/63f091be-4fce-4925-b832-45a38dfd4efb.png",
+      "/offers/howa-1500.webp",
     description: [
       ".223 Sporter (Upgraded from standard package)",
       "Nikko Stirling Diamond Long Range 4-16x50 scope",
@@ -52,7 +52,7 @@ export const SPECIAL_OFFERS: SpecialOffer[] = [
     category: "Scopes",
     title: "Barron Sports AO Illuminated Scope",
     image:
-      "https://d2f0ora2gkri0g.cloudfront.net/6e/ad/6ead7c06-ffd5-4cd0-8d0e-8aeb0698e482.jpeg",
+      "/offers/barron-sports-ao-illuminated-scope.webp",
     description: [
       "Mil-dot reticle 6-24x50",
       "1-inch tube with illumination",
@@ -80,7 +80,7 @@ export const SPECIAL_OFFERS: SpecialOffer[] = [
     category: "Ear Protection",
     title: "Impact Electronic Ear Muffs",
     image:
-      "https://d2f0ora2gkri0g.cloudfront.net/47/d5/47d5386e-8c4d-4ea2-b126-6a17a9c5ff01.png",
+      "/offers/impact-electronic-ear-muffs.webp",
     description: [
       "Adjustable closure headband",
       "Actively shuts off impulse noise over 82 dB",
@@ -92,7 +92,7 @@ export const SPECIAL_OFFERS: SpecialOffer[] = [
     id: "pard-thermal-spotter",
     category: "Thermal Optics",
     title: "Pard Thermal Image Spotters",
-    image: "https://cdn-new.pard.com/mall/landing/product/leopard-256/carousel/01.png",
+    image: "/offers/pard-thermal-image-spotters.webp",
     description: [
       "High-resolution thermal imaging optics",
       "Compact handheld design for field tracking",

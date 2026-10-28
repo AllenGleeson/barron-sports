@@ -6,155 +6,155 @@ export type Brand = {
 export const brands: Brand[] = [
   {
     name: "DogTrace",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/24/5b/245baf83-e8c8-472a-a52a-33e764453e0b.png",
+    logo: "/brands/dogtrace.webp",
   },
   {
     name: "Lithgow Arms",
-    logo: "https://www.lithgowarms.com/wp-content/uploads/2023/08/footer-lithgow-logo.png",
+    logo: "/brands/lithgow-arms.webp",
   },
   {
     name: "Browning Arms Company",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/71/9b/719bacc0-a758-4cbc-a744-667303ef1b8e.png",
+    logo: "/brands/browning-arms-company.webp",
   },
   {
     name: "Bushnell Outdoor Products",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/f4/17/f4171de5-f5c1-4105-a187-3abbbfd8312d.png",
+    logo: "/brands/bushnell-outdoor-products.webp",
   },
   {
     name: "J. G. Anschütz GmbH & Co. KG",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/01/da/01da4bbe-29ee-49bf-a9da-25dd6202c885.png",
+    logo: "/brands/j-g-anschutz-gmbh-co-kg.webp",
   },
   {
     name: "Fabbrica d'Armi Pietro Beretta",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/15/1e/151e9e3c-7a46-47cb-9f69-b43ad60eb0cf.png",
+    logo: "/brands/fabbrica-d-armi-pietro-beretta.webp",
   },
   {
     name: "Howard Leight by Honeywell",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/79/26/79268012-2770-49f5-93ae-58094deb072e.png",
+    logo: "/brands/howard-leight-by-honeywell.webp",
   },
   {
     name: "Bergara",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/30/28/30286d60-7d7c-4e3a-b506-0c6e1e3b6aee.png",
+    logo: "/brands/bergara.webp",
   },
   {
     name: "Blaser",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/b5/49/b549b6fb-603a-4073-b4ce-e3c5658a8430.png",
+    logo: "/brands/blaser.webp",
   },
   {
     name: "LPA",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/85/00/8500a6a7-ee8b-4db6-ae0d-434200860812.png",
+    logo: "/brands/lpa.webp",
   },
   {
     name: "Česká zbrojovka (CZ)",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/07/4c/074c8b9d-3e8a-43a1-ab3a-a428faea4eda.png",
+    logo: "/brands/ceska-zbrojovka-cz.webp",
   },
   {
     name: "Cogswell & Harrison",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/d6/a1/d6a14617-7c96-4bda-ad45-d9cec06ac43b.png",
+    logo: "/brands/cogswell-harrison.webp",
   },
   {
     name: "Leupold & Stevens",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/36/91/3691d857-bbca-4926-977a-86fb1af6e737.png",
+    logo: "/brands/leupold-stevens.webp",
   },
   {
     name: "Howa Machinery Company",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/49/65/49656029-29d3-4802-acd9-6cc883d5b657.png",
+    logo: "/brands/howa-machinery-company.webp",
   },
   {
     name: "Huğlu Hunting Firearms Cooperative",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/78/71/7871d5b8-b686-48bc-9865-76619afcb561.png",
+    logo: "/brands/huglu-hunting-firearms-cooperative.webp",
   },
   {
     name: "Meopta",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/66/59/66591fcb-093d-4ee8-bd02-0bcf703e208b.png",
+    logo: "/brands/meopta.webp",
   },
   {
     name: "Sturm, Ruger & Co.",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/77/a1/77a1c348-3c1a-41f3-8a1f-d8fd8c438752.png",
+    logo: "/brands/sturm-ruger-co.webp",
   },
   {
     name: "Miroku Corporation",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/82/4c/824c1de9-e7c4-4b3c-ba58-dc27bf0a8076.png",
+    logo: "/brands/miroku-corporation.webp",
   },
   {
     name: "Steyr Mannlicher",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/72/f1/72f1120b-8f1a-4f90-8c4d-7dc132739650.png",
+    logo: "/brands/steyr-mannlicher.webp",
   },
   {
     name: "Silma Arms S.r.l.",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/07/da/07dafa2e-1982-43c0-8c35-affdefa898b2.png",
+    logo: "/brands/silma-arms-s-r-l.webp",
   },
   {
     name: "Nikko Stirling",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/8c/af/8caf3d27-31e1-405f-86a7-46ab2c84b689.png",
+    logo: "/brands/nikko-stirling.webp",
   },
   {
     name: "Tikka T3",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/b8/a8/b8a8c7ef-a0b1-4ca2-9169-e7181b02083e.png",
+    logo: "/brands/tikka-t3.webp",
   },
   {
     name: "Webley & Scott",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/19/b8/19b86c94-b13a-472c-8732-f8741e1c37f7.png",
+    logo: "/brands/webley-scott.webp",
   },
   {
     name: "Weihrauch & Weihrauch GmbH & Co. KG",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/dc/ec/dcec583b-e58b-45e6-8fde-6d0a862b634f.jpg",
+    logo: "/brands/weihrauch-weihrauch-gmbh-co-kg.webp",
   },
   {
     name: "Winchester",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/1e/3b/1e3b1206-1ea2-4865-ae4d-a4e45b1aa3c2.png",
+    logo: "/brands/winchester.webp",
   },
   {
     name: "Yildiz Shotgun",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/4c/61/4c615896-6ef3-49eb-b107-ce360c8a5ace.png",
+    logo: "/brands/yildiz-shotgun.webp",
   },
   {
     name: "Carl Zeiss AG",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/3a/70/3a70b99c-ea46-402d-aaa2-517a04483c36.png",
+    logo: "/brands/carl-zeiss-ag.webp",
   },
   {
     name: "Gamo Outdoor, S.L.",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/7a/a9/7aa9501a-2c7b-4746-b4d3-cc9b4a5fdbd9.png",
+    logo: "/brands/gamo-outdoor-s-l.webp",
   },
   {
     name: "Cascade Cartridge",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/cd/60/cd6076d7-9fa2-47cd-8da8-a228f6e2d1c9.png",
+    logo: "/brands/cascade-cartridge.webp",
   },
   {
     name: "Ardee Sports Company",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/d1/e9/d1e96add-ae4a-4fb6-9737-72a9e1fa259b.png",
+    logo: "/brands/ardee-sports-company.webp",
   },
   {
     name: "Eley Hawk",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/72/13/7213e5c9-6207-4a7b-8278-3854c5a3592b.png",
+    logo: "/brands/eley-hawk.webp",
   },
   {
     name: "Federal Premium Ammunition",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/10/27/1027ff50-f87f-4e94-97e7-c7d6a59e2e07.png",
+    logo: "/brands/federal-premium-ammunition.webp",
   },
   {
     name: "Fiocchi Munizioni",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/36/a8/36a84c66-e0d8-4dc8-9be4-da0019f5c058.jpg",
+    logo: "/brands/fiocchi-munizioni.webp",
   },
   {
     name: "Hornady Manufacturing Company",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/92/00/9200cacb-acf6-44f8-9805-e8ba033a6759.png",
+    logo: "/brands/hornady-manufacturing-company.webp",
   },
   {
     name: "RC Eximport S.R.L.",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/28/4d/284d97b5-d5f5-4221-b6ed-89f650c8eee9.png",
+    logo: "/brands/rc-eximport-s-r-l.webp",
   },
   {
     name: "Lakeland Shooting Center",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/4d/b5/4db5c177-be5b-45ac-a9bc-b48dab99c1bb.png",
+    logo: "/brands/lakeland-shooting-center.webp",
   },
   {
     name: "Gowen & Bradshaw",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/16/68/1668ed4c-79d0-4795-a368-06cede00983d.png",
+    logo: "/brands/gowen-bradshaw.webp",
   },
   {
     name: "Highland Outdoors",
-    logo: "https://d2f0ora2gkri0g.cloudfront.net/be/9c/be9cbfb6-f9b8-4b72-a864-870c5f45c284.png",
+    logo: "/brands/highland-outdoors.webp",
   },
 ];
 
