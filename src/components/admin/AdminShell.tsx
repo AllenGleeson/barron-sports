@@ -11,6 +11,7 @@ const nav = [
   { href: "/admin/services/", label: "Services" },
   { href: "/admin/products/", label: "Products" },
   { href: "/admin/brands/", label: "Brands" },
+  { href: "/admin/users/", label: "Users" },
 ];
 
 function isActive(pathname: string, href: string) {

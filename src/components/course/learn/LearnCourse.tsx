@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { markCourseCompleted } from "@/lib/course/account";
+import { formatRecordDate } from "@/lib/course/certificate";
 import { lessonBySlug, learnerCourse, type QuizGrade } from "@/lib/course/curriculum";
-import { loadEnrolment } from "@/lib/course/enrolment";
+import type { CourseEnrolment } from "@/lib/course/enrolment";
 import {
-  createProgress,
+  completedProgress,
   isLessonUnlocked,
   loadProgress,
   saveProgress,
@@ -22,17 +24,6 @@ function firstOpenStep(lesson: LearnProgress["lessons"][string]): LessonStep {
   return "quiz";
 }
 
-/** Saved progress, with the enrolment name and email filled in if missing. */
-function initialProgress(): LearnProgress {
-  const saved = loadProgress();
-  const enrolment = loadEnrolment();
-  if (!enrolment) return saved;
-  return {
-    ...saved,
-    name: saved.name || enrolment.name,
-    email: saved.email || enrolment.email,
-  };
-}
 
 function firstUnfinishedLesson(progress: LearnProgress) {
   return (
@@ -43,34 +34,62 @@ function firstUnfinishedLesson(progress: LearnProgress) {
   );
 }
 
+type LearnCourseProps = {
+  learner: { name: string; email: string };
+  enrolment: CourseEnrolment;
+};
+
 /** Must render client-side only (it is shown by `EnrolmentGate`). */
-export function LearnCourse() {
-  const [progress, setProgress] = useState(initialProgress);
+export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
+  // The server's completion date wins over this device's progress, so a finished
+  // course stays finished everywhere and can't be taken again.
+  const [completedAt, setCompletedAt] = useState(enrolment.completedAt);
+  const [progress, setProgress] = useState(() => {
+    const saved = loadProgress();
+    return enrolment.completedAt ? completedProgress(saved, enrolment.completedAt) : saved;
+  });
   const [slug, setSlug] = useState(() => firstUnfinishedLesson(progress).slug);
   const [step, setStep] = useState<LessonStep>(() =>
     firstOpenStep(progress.lessons[slug]),
   );
-  const [resetArmed, setResetArmed] = useState(false);
+  const finished = Boolean(completedAt ?? progress.completedAt);
+
+  /** Records the finish on the server (once) and keeps its date. */
+  function reportFinished() {
+    void markCourseCompleted().then((date) => {
+      if (date) setCompletedAt(date);
+    });
+  }
+
+  // Progress finished on this device before the server knew about it.
+  useEffect(() => {
+    if (!enrolment.completedAt && loadProgress().completedAt) reportFinished();
+    // Only on first load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function commit(next: LearnProgress) {
-    setProgress(saveProgress(next));
+    const saved = saveProgress(completedAt ? completedProgress(next, completedAt) : next);
+    setProgress(saved);
+    if (saved.completedAt && !completedAt) reportFinished();
   }
 
   const lesson = lessonBySlug(slug);
   const lessonProgress = progress.lessons[lesson.slug];
   const lessonIndex = learnerCourse.lessons.findIndex((item) => item.slug === lesson.slug);
 
+  function scrollToId(id: string) {
+    window.requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    });
+  }
+
   function selectLesson(nextSlug: string) {
     const index = learnerCourse.lessons.findIndex((item) => item.slug === nextSlug);
     if (!isLessonUnlocked(index, progress)) return;
     setSlug(nextSlug);
     setStep(firstOpenStep(progress.lessons[nextSlug]));
-    setResetArmed(false);
-    if (window.matchMedia("(max-width: 1023px)").matches) {
-      window.requestAnimationFrame(() => {
-        document.getElementById("lesson-panel")?.scrollIntoView({ behavior: "smooth" });
-      });
-    }
+    if (window.matchMedia("(max-width: 1023px)").matches) scrollToId("lesson-panel");
   }
 
   function patchLesson(partial: Partial<LearnProgress["lessons"][string]>) {
@@ -85,7 +104,7 @@ export function LearnCourse() {
 
   function onGraded(grade: QuizGrade, answers: Record<string, string>) {
     const current = progress.lessons[lesson.slug];
-    commit({
+    const next: LearnProgress = {
       ...progress,
       lessons: {
         ...progress.lessons,
@@ -100,7 +119,10 @@ export function LearnCourse() {
           lastAnswers: answers,
         },
       },
-    });
+    };
+    commit(next);
+    // A pass swaps the quiz for the result screen, so bring the top of it into view.
+    if (grade.passed) scrollToId("lesson-panel");
   }
 
   const nextLesson = learnerCourse.lessons[lessonIndex + 1];
@@ -108,8 +130,11 @@ export function LearnCourse() {
     ? {
         label: nextLesson ? "Next lesson" : "View completion record",
         onClick: () => {
-          if (nextLesson) selectLesson(nextLesson.slug);
-          else document.getElementById("completion-record")?.scrollIntoView({ behavior: "smooth" });
+          if (nextLesson) {
+            selectLesson(nextLesson.slug);
+            scrollToId("lesson-panel");
+          }
+          else scrollToId("completion-record");
         },
       }
     : null;
@@ -117,24 +142,23 @@ export function LearnCourse() {
   return (
     <section className="bg-ink py-8 lg:py-12">
       <Container>
-        <p className="text-sm text-stone">
-          Progress stays on this device. Pass each quiz at {learnerCourse.passPercent}% to open the
-          next lesson.
-        </p>
+        {finished ? (
+          <p className="text-sm text-parchment">
+            You completed the course
+            {completedAt ? ` on ${formatRecordDate(completedAt)}` : ""}. You can look back over the
+            lessons, but the course and its record can&apos;t be redone.
+          </p>
+        ) : (
+          <p className="text-sm text-stone">
+            Take it at your own pace. Pass each quiz at {learnerCourse.passPercent}% to open the next
+            lesson.
+          </p>
+        )}
         <div className="mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
           <ModuleNav
             progress={progress}
             activeSlug={slug}
             onSelect={selectLesson}
-            resetArmed={resetArmed}
-            onResetArm={() => setResetArmed(true)}
-            onReset={() => {
-              const fresh = saveProgress(createProgress());
-              setProgress(fresh);
-              setSlug(learnerCourse.lessons[0].slug);
-              setStep("read");
-              setResetArmed(false);
-            }}
           />
 
           <div id="lesson-panel" className="scroll-mt-28">
@@ -177,33 +201,10 @@ export function LearnCourse() {
           </div>
         </div>
 
-        <CompletionRecord progress={progress} onChange={commit} />
-
-        <div className="mt-6 lg:hidden">
-          {resetArmed ? (
-            <button
-              type="button"
-              onClick={() => {
-                const fresh = saveProgress(createProgress());
-                setProgress(fresh);
-                setSlug(learnerCourse.lessons[0].slug);
-                setStep("read");
-                setResetArmed(false);
-              }}
-              className="text-[11px] uppercase tracking-[0.18em] text-brass"
-            >
-              Clear this preview
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setResetArmed(true)}
-              className="text-[11px] uppercase tracking-[0.18em] text-stone"
-            >
-              Reset this preview
-            </button>
-          )}
-        </div>
+        <CompletionRecord
+          completedAt={completedAt ?? progress.completedAt}
+          learner={{ name: enrolment.certificateName ?? learner.name, email: learner.email }}
+        />
       </Container>
     </section>
   );

@@ -7,31 +7,32 @@ import {
   AdminInput,
   AdminTextarea,
   AdminCheckbox,
-  adminButton,
 } from "@/components/admin/fields";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import { AdminImagePreview } from "@/components/admin/AdminImagePreview";
 import {
-  BulkPublishPanel,
   SelectAllRow,
   SelectRowCell,
+  useBulkFlag,
   useRowSelection,
 } from "@/components/admin/bulk";
 import {
-  DateColumnFilter,
+  DATE_OPTIONS,
   formatAdminDate,
   matchesDateFilter,
   matchesPublishedFilter,
-  PublishedColumnFilter,
+  PUBLISHED_OPTIONS,
   type DateFilter,
   type PublishedFilter,
-} from "@/components/admin/columnFilters";
+} from "@/components/admin/filters";
 import {
   AdminFormActions,
-  AdminListHeader,
   AdminTable,
+  compareSortValues,
+  useTableSort,
   type AdminTableHeader,
 } from "@/components/admin/list";
+import { AdminToolbar, type ActionDef, type FilterDef } from "@/components/admin/toolbar";
 import type { AdminService } from "@/lib/admin/models";
 import { slugify } from "@/lib/admin/slug";
 import { newAdminId, useAdminStore } from "@/lib/admin/store";
@@ -56,6 +57,18 @@ function emptyService(sortOrder: number): AdminService {
   };
 }
 
+/** What each column sorts by; anything else falls back to the record's sort order. */
+function sortValue(
+  row: { title: string; published: boolean; createdAt: string; updatedAt: string; sortOrder: number },
+  key: string,
+) {
+  if (key === "name") return row.title;
+  if (key === "published") return row.published ? 1 : 0;
+  if (key === "createdAt") return row.createdAt;
+  if (key === "updatedAt") return row.updatedAt;
+  return row.sortOrder;
+}
+
 export function ServicesAdmin() {
   const { data, upsert, patch, remove } = useAdminStore();
   const [search, setSearch] = useState("");
@@ -67,11 +80,17 @@ export function ServicesAdmin() {
   const [dateAddedFilter, setDateAddedFilter] = useState<DateFilter>("all");
   const [lastUpdatedFilter, setLastUpdatedFilter] = useState<DateFilter>("all");
 
+  const { sort, toggle: toggleSort } = useTableSort({ key: "sortOrder", direction: "asc" });
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return data.services
       .slice()
       .sort((a, b) => a.sortOrder - b.sortOrder)
+      // Stable sort, so equal values keep the sort order above.
+      .sort((a, b) =>
+        compareSortValues(sortValue(a, sort.key), sortValue(b, sort.key), sort.direction),
+      )
       .filter((row) => matchesPublishedFilter(row.published, publishedFilter))
       .filter((row) => matchesDateFilter(row.createdAt, dateAddedFilter))
       .filter((row) => matchesDateFilter(row.updatedAt, lastUpdatedFilter))
@@ -87,48 +106,86 @@ export function ServicesAdmin() {
     lastUpdatedFilter,
     publishedFilter,
     search,
+    sort,
   ]);
 
   const selection = useRowSelection(rows);
 
-  const filtersAtDefault =
-    publishedFilter === "all" &&
-    dateAddedFilter === "all" &&
-    lastUpdatedFilter === "all";
+  const bulk = useBulkFlag({
+    noun: "service",
+    onApply: (field, ids, value) => patch("services", ids, (row) => ({ ...row, [field]: value })),
+  });
+  const selectedRows = data.services
+    .filter((row) => selection.isSelected(row.id))
+    .map((row) => ({ id: row.id, name: row.title, published: row.published }));
+
+  function resetFilters() {
+    setPublishedFilter("all");
+    setDateAddedFilter("all");
+    setLastUpdatedFilter("all");
+  }
+
+  const filters: FilterDef[] = [
+    {
+      key: "published",
+      label: "Published",
+      value: publishedFilter,
+      options: PUBLISHED_OPTIONS,
+      onChange: (value) => setPublishedFilter(value as PublishedFilter),
+    },
+    {
+      key: "dateAdded",
+      label: "Date added",
+      value: dateAddedFilter,
+      options: DATE_OPTIONS,
+      onChange: (value) => setDateAddedFilter(value as DateFilter),
+    },
+    {
+      key: "lastUpdated",
+      label: "Last updated",
+      value: lastUpdatedFilter,
+      options: DATE_OPTIONS,
+      onChange: (value) => setLastUpdatedFilter(value as DateFilter),
+    },
+  ];
+
+  const actions: ActionDef[] = [
+    {
+      key: "publish",
+      label: "Publish",
+      needsSelection: true,
+      onSelect: () => bulk.start("published", true, selectedRows),
+    },
+    {
+      key: "unpublish",
+      label: "Unpublish",
+      needsSelection: true,
+      onSelect: () => bulk.start("published", false, selectedRows),
+    },
+  ];
 
   const tableHeaders: AdminTableHeader[] = [
     "Select",
-    "Service",
+    { label: "Service", sortKey: "name" },
     {
       label: "Published",
-      filter: (
-        <PublishedColumnFilter
-          value={publishedFilter}
-          onChange={setPublishedFilter}
-        />
-      ),
+      sortKey: "published",
+      sortFirst: "desc",
+      className: "hidden sm:table-cell",
     },
     {
-      label: "Date Added",
-      filter: (
-        <DateColumnFilter
-          label="Date added"
-          value={dateAddedFilter}
-          onChange={setDateAddedFilter}
-        />
-      ),
+      label: "Date added",
+      sortKey: "createdAt",
+      sortFirst: "desc",
+      className: "hidden lg:table-cell",
     },
     {
-      label: "Last Updated",
-      filter: (
-        <DateColumnFilter
-          label="Last updated"
-          value={lastUpdatedFilter}
-          onChange={setLastUpdatedFilter}
-        />
-      ),
+      label: "Last updated",
+      sortKey: "updatedAt",
+      sortFirst: "desc",
+      className: "hidden lg:table-cell",
     },
-    "Actions",
+    "",
   ];
 
   if (draft) {
@@ -290,44 +347,26 @@ export function ServicesAdmin() {
 
   return (
     <div>
-      <AdminListHeader
+      <AdminToolbar
         title="Services"
         count={rows.length}
-        search={search}
-        onSearch={setSearch}
+        total={data.services.length}
         addLabel="Add service"
         onAdd={() => {
           setIsNew(true);
           setAttempted(false);
           setDraft(emptyService(data.services.length));
         }}
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search services"
+        filters={filters}
+        onResetFilters={resetFilters}
+        actions={actions}
+        selectedCount={selection.selected.length}
+        onClearSelection={selection.clear}
       />
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          className={adminButton.secondary}
-          disabled={filtersAtDefault}
-          onClick={() => {
-            setPublishedFilter("all");
-            setDateAddedFilter("all");
-            setLastUpdatedFilter("all");
-          }}
-        >
-          Reset filters
-        </button>
-      </div>
-      <div className="mt-4 max-w-md">
-        <BulkPublishPanel
-          noun="service"
-          rows={data.services
-            .filter((row) => selection.isSelected(row.id))
-            .map((row) => ({ id: row.id, name: row.title, published: row.published }))}
-          onApply={(ids, published) =>
-            patch("services", ids, (row) => ({ ...row, published }))
-          }
-        />
-      </div>
-      <AdminTable headers={tableHeaders}>
+      <AdminTable headers={tableHeaders} sort={sort} onSort={toggleSort}>
         <SelectAllRow selection={selection} colSpan={5} />
         {rows.map((row) => (
           <tr key={row.id}>
@@ -342,19 +381,22 @@ export function ServicesAdmin() {
                 />
                 <div>
                   <p className="text-cream">{row.title}</p>
+                  {row.published ? null : (
+                    <p className="text-xs text-stone sm:hidden">Unpublished</p>
+                  )}
                   <p className="line-clamp-1 text-xs text-stone">
                     {row.description}
                   </p>
                 </div>
               </div>
             </td>
-            <td className="px-2.5 py-2.5 text-parchment sm:px-3 lg:px-4 lg:py-3">
+            <td className="px-2.5 py-2.5 text-parchment sm:px-3 lg:px-4 lg:py-3 hidden sm:table-cell">
               {row.published ? "Yes" : "No"}
             </td>
-            <td className="whitespace-nowrap px-2.5 py-2.5 text-parchment tabular-nums sm:px-3 lg:px-4 lg:py-3">
+            <td className="whitespace-nowrap px-2.5 py-2.5 text-parchment tabular-nums sm:px-3 lg:px-4 lg:py-3 hidden lg:table-cell">
               {formatAdminDate(row.createdAt)}
             </td>
-            <td className="whitespace-nowrap px-2.5 py-2.5 text-parchment tabular-nums sm:px-3 lg:px-4 lg:py-3">
+            <td className="whitespace-nowrap px-2.5 py-2.5 text-parchment tabular-nums sm:px-3 lg:px-4 lg:py-3 hidden lg:table-cell">
               {formatAdminDate(row.updatedAt)}
             </td>
             <td className="px-2.5 py-2.5 text-right sm:px-3 lg:px-4 lg:py-3">
@@ -373,6 +415,7 @@ export function ServicesAdmin() {
           </tr>
         ))}
       </AdminTable>
+      {bulk.modal}
     </div>
   );
 }

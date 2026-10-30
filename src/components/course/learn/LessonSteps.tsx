@@ -1,6 +1,6 @@
 import { CoverImage } from "@/components/media/CoverImage";
 import { learnerCourse, type CourseLesson } from "@/lib/course/curriculum";
-import type { LessonProgress } from "@/lib/course/progress";
+import { isStepUnlocked, type LessonProgress } from "@/lib/course/progress";
 import { ActionButton } from "@/components/ui/Button";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
@@ -22,9 +22,7 @@ export function LessonStepper({ step, lessonProgress, onStep }: LessonStepperPro
   return (
     <div className="mt-6 grid grid-cols-3 border border-line" role="tablist" aria-label="Lesson steps">
       {steps.map((item, index) => {
-        const locked =
-          (item.id === "watch" && !lessonProgress.read) ||
-          (item.id === "quiz" && (!lessonProgress.read || !lessonProgress.watched));
+        const locked = !isStepUnlocked(item.id, lessonProgress);
         const done =
           (item.id === "read" && lessonProgress.read) ||
           (item.id === "watch" && lessonProgress.watched) ||

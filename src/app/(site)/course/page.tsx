@@ -97,7 +97,7 @@ export default function CoursePage() {
                 instructor once the certificate is through. Call {site.phone.display}.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Button href="/course/enrol">{firearmsCourse.cta}</Button>
+                <Button href="/course/dashboard">{firearmsCourse.cta}</Button>
                 <Button href="/contact-us" variant="ghost">
                   Ask about the course
                 </Button>

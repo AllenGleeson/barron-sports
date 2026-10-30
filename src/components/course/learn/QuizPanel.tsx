@@ -2,11 +2,13 @@ import { useState } from "react";
 import {
   gradeQuiz,
   requiredCorrectCount,
+  startingAnswers,
   type CourseLesson,
   type QuizGrade,
 } from "@/lib/course/curriculum";
 import type { LessonProgress } from "@/lib/course/progress";
 import { ActionButton } from "@/components/ui/Button";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 type QuizPanelProps = {
   lesson: CourseLesson;
@@ -16,24 +18,28 @@ type QuizPanelProps = {
 };
 
 export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProps) {
-  const [answers, setAnswers] = useState<Record<string, string>>(saved.lastAnswers ?? {});
+  const [answers, setAnswers] = useState<Record<string, string>>(
+    () => saved.lastAnswers ?? startingAnswers(lesson.quiz),
+  );
   const [submitted, setSubmitted] = useState(Boolean(saved.lastAnswers) || saved.passed);
   const [error, setError] = useState("");
+  // After a pass, the result screen shows first; "Review questions" opens the marked quiz.
+  const [reviewing, setReviewing] = useState(false);
   const grade = submitted ? gradeQuiz(lesson.quiz, answers) : null;
   const needed = requiredCorrectCount(lesson.quiz.questions.length, lesson.quiz.passPercent);
 
-  if (saved.passed && !saved.lastAnswers) {
+  // Older saved passes may have no answers to review, only a score.
+  const passedWithoutAnswers = saved.passed && !saved.lastAnswers;
+  if (passedWithoutAnswers || (grade?.passed && !reviewing)) {
     return (
-      <div className="mt-6 border border-line bg-moss px-5 py-6 sm:px-8">
-        <p className="text-base text-cream" role="status">
-          Passed{saved.scorePercent !== null ? ` at ${saved.scorePercent}%` : ""}.
-        </p>
-        {nextAction ? (
-          <ActionButton className="mt-6" onClick={nextAction.onClick}>
-            {nextAction.label}
-          </ActionButton>
-        ) : null}
-      </div>
+      <QuizResult
+        scorePercent={grade?.scorePercent ?? saved.scorePercent}
+        correct={grade?.correct ?? null}
+        total={lesson.quiz.questions.length}
+        passPercent={lesson.quiz.passPercent}
+        nextAction={nextAction}
+        onReview={passedWithoutAnswers ? null : () => setReviewing(true)}
+      />
     );
   }
 
@@ -142,7 +148,7 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
         {submitted && !grade?.passed ? (
           <ActionButton
             onClick={() => {
-              setAnswers({});
+              setAnswers(startingAnswers(lesson.quiz));
               setSubmitted(false);
               setError("");
             }}
@@ -155,5 +161,39 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
         ) : null}
       </div>
     </form>
+  );
+}
+
+type QuizResultProps = {
+  scorePercent: number | null;
+  correct: number | null;
+  total: number;
+  passPercent: number;
+  nextAction: { label: string; onClick: () => void } | null;
+  onReview: (() => void) | null;
+};
+
+/** Shown after a passed quiz: the score, then continue or review. */
+function QuizResult({ scorePercent, correct, total, passPercent, nextAction, onReview }: QuizResultProps) {
+  return (
+    <div className="mt-6 border border-brass bg-moss px-5 py-8 text-center sm:px-8 sm:py-10" role="status">
+      <Eyebrow>Quiz passed</Eyebrow>
+      {scorePercent !== null ? (
+        <p className="mt-4 font-display text-6xl text-cream sm:text-7xl">{scorePercent}%</p>
+      ) : null}
+      <p className="mt-3 text-sm text-parchment">
+        {correct !== null ? `${correct} of ${total} correct. ` : ""}The pass mark is {passPercent}%.
+      </p>
+      <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        {nextAction ? (
+          <ActionButton onClick={nextAction.onClick}>{nextAction.label}</ActionButton>
+        ) : null}
+        {onReview ? (
+          <ActionButton variant="secondary" onClick={onReview}>
+            Review questions
+          </ActionButton>
+        ) : null}
+      </div>
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { AdminProduct } from "@/lib/admin/models";
-import { discountPercentOf, isDiscounted, productSaleCents } from "@/lib/admin/money";
+import type { FilterOption } from "@/components/admin/filters";
+import { DISCOUNT_PERCENTS, discountPercentOf, isDiscounted, productSaleCents } from "@/lib/admin/money";
 import { offerStatus, type OfferStatus } from "@/lib/admin/productOffer";
 
 export type PriceFilter =
@@ -57,3 +58,40 @@ export const OFFER_STATUS_LABELS: Record<OfferStatus, string> = {
   hidden: "Unpublished",
   none: "No",
 };
+
+export const TYPE_OPTIONS: FilterOption[] = [
+  { value: "all", label: "All" },
+  { value: "product", label: "Products" },
+  { value: "package", label: "Packages" },
+];
+
+/** On the Special offers view every row is an offer, so "any"/"none" are left out. */
+export function offerOptions(offersOnly: boolean): FilterOption[] {
+  return [
+    { value: "all", label: "All" },
+    ...(offersOnly ? [] : [{ value: "any", label: "Any special offer" }]),
+    { value: "live", label: "Live" },
+    { value: "scheduled", label: "Scheduled" },
+    { value: "ended", label: "Ended" },
+    { value: "hidden", label: "Unpublished" },
+    ...(offersOnly ? [] : [{ value: "none", label: "Not an offer" }]),
+  ];
+}
+
+export const PRICE_OPTIONS: FilterOption[] = [
+  { value: "all", label: "Any price" },
+  { value: "priced", label: "Has a price" },
+  { value: "none", label: "No price" },
+  { value: "under-250", label: "Under €250" },
+  { value: "250-500", label: "€250–€500" },
+  { value: "500-1000", label: "€500–€1,000" },
+  { value: "1000-2500", label: "€1,000–€2,500" },
+  { value: "over-2500", label: "Over €2,500" },
+];
+
+export const DISCOUNT_OPTIONS: FilterOption[] = [
+  { value: "all", label: "All" },
+  { value: "yes", label: "Discounted" },
+  { value: "no", label: "Not discounted" },
+  ...DISCOUNT_PERCENTS.map((percent) => ({ value: String(percent), label: `${percent}% off` })),
+];

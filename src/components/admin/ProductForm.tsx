@@ -35,11 +35,16 @@ export function emptyProduct({
   categoryId,
   sortOrder,
   specialOffer = false,
+  productIds = [],
+  priceCents = null,
 }: {
   kind: AdminProductKind;
   categoryId: string;
   sortOrder: number;
   specialOffer?: boolean;
+  /** Products already in a new package. */
+  productIds?: string[];
+  priceCents?: number | null;
 }): AdminProduct {
   const now = new Date().toISOString();
   return {
@@ -50,7 +55,7 @@ export function emptyProduct({
     name: "",
     summary: "",
     imageUrl: null,
-    priceCents: null,
+    priceCents,
     discountPriceCents: null,
     priceDisplay: null,
     caliber: null,
@@ -61,7 +66,7 @@ export function emptyProduct({
     quantity: null,
     stockNote: null,
     brandIds: [],
-    productIds: [],
+    productIds,
     specialOffer,
     offerLabel: null,
     highlights: [],

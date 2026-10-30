@@ -10,7 +10,7 @@ export const fieldClass = `mt-2 w-full border border-line bg-ink px-3 py-3 text-
 export const fieldLabelClass = "text-[11px] uppercase tracking-[0.2em] text-stone";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-export type ButtonSize = "md" | "sm";
+export type ButtonSize = "md" | "sm" | "compact" | "xs";
 
 const variants: Record<ButtonVariant, string> = {
   primary: "border border-brass bg-brass text-ink hover:bg-brass-light",
@@ -23,8 +23,13 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const sizes: Record<ButtonSize, string> = {
-  md: "px-6 py-3",
-  sm: "px-5 py-2.5",
+  md: "px-6 py-3 text-[12px] tracking-[0.18em]",
+  sm: "px-5 py-2.5 text-[12px] tracking-[0.18em]",
+  /** Small on phones, `sm` from tablet width; for rows of buttons that must fit. */
+  compact:
+    "px-2 py-2 text-[11px] leading-tight tracking-[0.06em] sm:px-5 sm:py-2.5 sm:text-[12px] sm:tracking-[0.18em]",
+  /** Inside table rows (e.g. admin "Edit"). */
+  xs: "px-3 py-1.5 text-[11px] tracking-[0.16em]",
 };
 
 /** Class string for anything styled as a button (links and `<button>`s). */
@@ -37,5 +42,5 @@ export function buttonClass({
   size?: ButtonSize;
   className?: string;
 } = {}) {
-  return `inline-flex items-center justify-center text-[12px] font-medium uppercase tracking-[0.18em] transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${focusRing} ${sizes[size]} ${variants[variant]} ${className}`;
+  return `inline-flex items-center justify-center cursor-pointer font-medium uppercase transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${focusRing} ${sizes[size]} ${variants[variant]} ${className}`;
 }

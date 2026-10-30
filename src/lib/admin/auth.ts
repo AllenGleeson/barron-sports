@@ -14,7 +14,7 @@ export type AdminAuth =
   | { status: "loading" }
   | { status: "unconfigured" }
   | { status: "signed-out" }
-  | { status: "signed-in"; email: string; isAdmin: boolean };
+  | { status: "signed-in"; id: string; email: string; isAdmin: boolean; isSuperAdmin: boolean };
 
 const LOADING: AdminAuth = { status: "loading" };
 
@@ -29,10 +29,13 @@ function setState(next: AdminAuth) {
 
 function fromSession(session: Session | null): AdminAuth {
   if (!session) return { status: "signed-out" };
+  const isAdmin = session.user.app_metadata?.role === "admin";
   return {
     status: "signed-in",
+    id: session.user.id,
     email: session.user.email ?? "",
-    isAdmin: session.user.app_metadata?.role === "admin",
+    isAdmin,
+    isSuperAdmin: isAdmin && session.user.app_metadata?.super_admin === true,
   };
 }
 

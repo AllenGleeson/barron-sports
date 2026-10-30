@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { AdminCheckbox, adminButton } from "@/components/admin/fields";
+import { useState, type MouseEvent } from "react";
+import { AdminCheckbox } from "@/components/admin/fields";
 import {
   PublishConfirmModal,
   type PublishableRow,
@@ -25,6 +25,7 @@ export function useRowSelection(rows: { id: string }[]) {
     toggle: (id: string, checked: boolean) =>
       setPicked(checked ? [...selected, id] : selected.filter((item) => item !== id)),
     setAll: (checked: boolean) => setPicked(checked ? rows.map((row) => row.id) : []),
+    clear: () => setPicked([]),
   };
 }
 
@@ -57,6 +58,27 @@ export function SelectAllRow({
   );
 }
 
+/**
+ * Props for an admin table `<tr>` so clicking anywhere on the row ticks it.
+ * Clicks on the row's own controls (checkbox, Edit button, links) are left alone.
+ */
+export function selectableRowProps(selection: Selection, id: string) {
+  const selected = selection.isSelected(id);
+  return {
+    "aria-selected": selected,
+    className: `cursor-pointer transition-colors ${
+      selected ? "bg-forest/50" : "hover:bg-forest/25"
+    }`,
+    onClick: (event: MouseEvent<HTMLTableRowElement>) => {
+      const target = event.target as HTMLElement;
+      if (target.closest("button, a, input, label, select, textarea")) return;
+      // Don't toggle when the user was dragging to select text.
+      if (window.getSelection()?.toString()) return;
+      selection.toggle(id, !selected);
+    },
+  };
+}
+
 /** The checkbox cell at the start of each admin table row. */
 export function SelectRowCell({
   selection,
@@ -81,27 +103,22 @@ export function SelectRowCell({
 }
 
 /**
- * "Set published" (or "Set special offer") box for the selected rows, with the
- * confirm dialog. `onApply` receives the confirmed ids and the new value.
+ * Bulk "published" / "special offer" changes with a confirm dialog.
+ * `start` opens the dialog for the given rows; render `modal` somewhere on the page.
  */
-export function BulkPublishPanel({
+export function useBulkFlag({
   noun,
-  rows,
-  field = "published",
   onApply,
 }: {
   noun: string;
-  rows: PublishableRow[];
-  field?: "published" | "specialOffer";
-  onApply: (ids: string[], value: boolean) => void;
+  onApply: (field: "published" | "specialOffer", ids: string[], value: boolean) => void;
 }) {
   const [plan, setPlan] = useState<PublishPlan | null>(null);
-  const count = rows.length;
-  const current = (row: PublishableRow) =>
-    field === "specialOffer" ? Boolean(row.specialOffer) : row.published;
 
-  function start(value: boolean) {
-    if (count === 0) return;
+  function start(field: "published" | "specialOffer", value: boolean, rows: PublishableRow[]) {
+    if (rows.length === 0) return;
+    const current = (row: PublishableRow) =>
+      field === "specialOffer" ? Boolean(row.specialOffer) : row.published;
     setPlan({
       published: value,
       field,
@@ -111,52 +128,19 @@ export function BulkPublishPanel({
     });
   }
 
-  function confirm() {
-    if (plan && plan.include.length > 0) onApply(plan.include, plan.published);
-    setPlan(null);
-  }
+  const modal = plan ? (
+    <PublishConfirmModal
+      plan={plan}
+      onChangeInclude={(include) => setPlan({ ...plan, include })}
+      onCancel={() => setPlan(null)}
+      onConfirm={() => {
+        if (plan.include.length > 0) {
+          onApply(plan.field ?? "published", plan.include, plan.published);
+        }
+        setPlan(null);
+      }}
+    />
+  ) : null;
 
-  return (
-    <div className="border border-line bg-forest p-4">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-brass">
-        {field === "specialOffer" ? "Set special offer" : "Set published"}
-      </p>
-      <p className="mt-3 text-sm text-parchment">
-        {count === 0
-          ? `Select one or more ${noun}s first.`
-          : `${count} selected ${noun}${count === 1 ? "" : "s"}`}
-      </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          className={adminButton.primary}
-          disabled={count === 0}
-          onClick={() => start(true)}
-        >
-          Yes
-        </button>
-        <button
-          type="button"
-          className={adminButton.secondary}
-          disabled={count === 0}
-          onClick={() => start(false)}
-        >
-          No
-        </button>
-      </div>
-      <p className="mt-3 text-xs leading-relaxed text-stone">
-        {field === "specialOffer"
-          ? `Special offers appear on the Special Offers pages while published.`
-          : `Published ${noun}s are shown on the site. Unpublished ${noun}s are hidden.`}
-      </p>
-      {plan ? (
-        <PublishConfirmModal
-          plan={plan}
-          onChangeInclude={(include) => setPlan({ ...plan, include })}
-          onCancel={() => setPlan(null)}
-          onConfirm={confirm}
-        />
-      ) : null}
-    </div>
-  );
+  return { start, modal };
 }

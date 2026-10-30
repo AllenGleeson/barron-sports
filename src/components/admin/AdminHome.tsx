@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useAdminUsers } from "@/lib/admin/usersApi";
 import { isPackage } from "@/lib/admin/models";
 import { useAdminStore } from "@/lib/admin/store";
 
 export function AdminHome() {
   const { data } = useAdminStore();
+  const { state: users } = useAdminUsers();
   const cards = [
     {
       href: "/admin/products/",
@@ -24,6 +26,11 @@ export function AdminHome() {
     },
     { href: "/admin/services/", label: "Services", count: data.services.length },
     { href: "/admin/brands/", label: "Brands", count: data.brands.length },
+    {
+      href: "/admin/users/",
+      label: "Users",
+      count: users.status === "ready" ? users.users.length : "…",
+    },
   ];
 
   return (
@@ -34,7 +41,7 @@ export function AdminHome() {
         services update on the live site straight away; the rest of the product
         pages still come from the site files.
       </p>
-      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {cards.map((card) => (
           <Link
             key={card.href}

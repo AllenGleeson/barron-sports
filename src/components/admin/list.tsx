@@ -1,72 +1,102 @@
-import { adminButton, AdminInput } from "@/components/admin/fields";
+"use client";
 
-export function AdminListHeader({
-  title,
-  count,
-  search,
-  onSearch,
-  onAdd,
-  addLabel,
-}: {
-  title: string;
-  count: number;
-  search: string;
-  onSearch: (value: string) => void;
-  onAdd: () => void;
-  addLabel: string;
-}) {
-  return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="font-display text-4xl text-cream">{title}</h1>
-        <p className="mt-2 text-sm text-parchment">{count} records</p>
-      </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <AdminInput
-          type="search"
-          placeholder="Search"
-          value={search}
-          onChange={(event) => onSearch(event.target.value)}
-          className="sm:w-56"
-        />
-        <button type="button" className={adminButton.primary} onClick={onAdd}>
-          {addLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
+import { useState } from "react";
+import { adminButton } from "@/components/admin/fields";
 
+export type SortDirection = "asc" | "desc";
+export type TableSort = { key: string; direction: SortDirection };
+
+/**
+ * A column heading; `className` can hide it on small screens (e.g. "hidden md:table-cell").
+ * Give it a `sortKey` (and pass `sort` / `onSort` to the table) to make it a sort button.
+ * `sortFirst` is the direction on first click, e.g. "desc" for dates so newest comes first.
+ */
 export type AdminTableHeader =
   | string
-  | { label: string; filter?: React.ReactNode; className?: string };
+  | { label: string; className?: string; sortKey?: string; sortFirst?: SortDirection };
+
+/**
+ * Sort state for an admin table. Clicking a column sorts by it, a second click flips it,
+ * and a third goes back to `initial` (the table's normal order).
+ */
+export function useTableSort(initial: TableSort) {
+  const [sort, setSort] = useState(initial);
+  function toggle(key: string, first: SortDirection = "asc") {
+    setSort((current) => {
+      if (current.key !== key) return { key, direction: first };
+      if (current.direction === first) return { key, direction: first === "asc" ? "desc" : "asc" };
+      return key === initial.key ? { key, direction: first } : initial;
+    });
+  }
+  return { sort, toggle };
+}
+
+/** Compares two cell values for sorting. Empty values always go last. */
+export function compareSortValues(
+  a: string | number | null,
+  b: string | number | null,
+  direction: SortDirection,
+) {
+  if (a === null || a === "") return b === null || b === "" ? 0 : 1;
+  if (b === null || b === "") return -1;
+  const result =
+    typeof a === "number" && typeof b === "number"
+      ? a - b
+      : String(a).localeCompare(String(b), "en-IE", { sensitivity: "base", numeric: true });
+  return direction === "asc" ? result : -result;
+}
 
 export function AdminTable({
   headers,
   children,
   tableClassName,
+  className = "mt-6",
+  sort,
+  onSort,
 }: {
   headers: AdminTableHeader[];
   children: React.ReactNode;
   tableClassName?: string;
+  /** Classes for the outer box; defaults to the usual top margin. */
+  className?: string;
+  sort?: TableSort;
+  onSort?: (key: string, first: SortDirection) => void;
 }) {
   return (
-    <div className="mt-6 overflow-x-auto border border-line">
+    <div className={`${className} overflow-x-auto border border-line`}>
       <table className={`w-full text-left text-sm ${tableClassName ?? ""}`}>
         <thead className="bg-forest text-[11px] uppercase tracking-[0.14em] text-stone">
           <tr>
-            {headers.map((header) => {
-              const label = typeof header === "string" ? header : header.label;
-              const filter = typeof header === "string" ? null : header.filter;
-              const className =
-                typeof header === "string" ? undefined : header.className;
+            {headers.map((header, index) => {
+              const item = typeof header === "string" ? { label: header } : header;
+              const sortKey = "sortKey" in item ? item.sortKey : undefined;
+              const active = sortKey && sort?.key === sortKey ? sort.direction : null;
               return (
                 <th
-                  key={label || "actions"}
-                  className={`px-2 py-2.5 align-bottom font-medium sm:px-2.5 lg:px-3 lg:py-3 ${className ?? ""}`}
+                  key={`${index}-${item.label}`}
+                  aria-sort={active ? (active === "asc" ? "ascending" : "descending") : undefined}
+                  className={`px-2 py-2.5 align-bottom font-medium sm:px-2.5 lg:px-3 lg:py-3 ${
+                    "className" in item ? (item.className ?? "") : ""
+                  }`}
                 >
-                  <span className="block leading-tight">{label}</span>
-                  {filter}
+                  {sortKey && onSort ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onSort(sortKey, ("sortFirst" in item ? item.sortFirst : undefined) ?? "asc")
+                      }
+                      className={`inline-flex cursor-pointer items-center gap-1 text-left uppercase leading-tight tracking-[0.14em] hover:text-cream ${
+                        active ? "text-brass" : ""
+                      }`}
+                    >
+                      {item.label}
+                      <span aria-hidden="true" className={active ? "" : "opacity-40"}>
+                        {active === "desc" ? "▼" : active === "asc" ? "▲" : "↕"}
+                      </span>
+                    </button>
+                  ) : (
+                    <span className="block leading-tight">{item.label}</span>
+                  )}
                 </th>
               );
             })}

@@ -1,46 +1,62 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AdminCheckbox, AdminSelect, adminButton } from "@/components/admin/fields";
+import { useMemo, useState } from "react";
+import { buttonClass } from "@/components/ui/styles";
+import { AdminCheckbox } from "@/components/admin/fields";
 import {
-  DiscountConfirmModal,
-  type DiscountPlan,
-} from "@/components/admin/DiscountConfirmModal";
-import {
-  BulkPublishPanel,
   SelectAllRow,
   SelectRowCell,
+  selectableRowProps,
+  useBulkFlag,
   useRowSelection,
 } from "@/components/admin/bulk";
+import { DiscountDialog } from "@/components/admin/DiscountDialog";
 import {
-  ColumnFilter,
-  DateColumnFilter,
+  DATE_OPTIONS,
   formatAdminDate,
   matchesDateFilter,
-  PublishedColumnFilter,
+  matchesPublishedFilter,
+  PUBLISHED_OPTIONS,
   type DateFilter,
   type PublishedFilter,
-} from "@/components/admin/columnFilters";
-import { AdminListHeader, AdminTable, type AdminTableHeader } from "@/components/admin/list";
+} from "@/components/admin/filters";
+import {
+  AdminTable,
+  compareSortValues,
+  useTableSort,
+  type AdminTableHeader,
+  type SortDirection,
+} from "@/components/admin/list";
 import { emptyProduct, ProductForm } from "@/components/admin/ProductForm";
 import {
+  DISCOUNT_OPTIONS,
   matchesDiscountFilter,
   matchesOfferFilter,
   matchesPriceFilter,
   matchesTypeFilter,
   OFFER_STATUS_LABELS,
+  offerOptions,
+  PRICE_OPTIONS,
+  TYPE_OPTIONS,
   type DiscountFilter,
   type OfferFilter,
   type PriceFilter,
   type TypeFilter,
 } from "@/components/admin/productFilters";
+import {
+  AdminTabs,
+  AdminToolbar,
+  MenuButton,
+  type ActionDef,
+  type FilterDef,
+} from "@/components/admin/toolbar";
 import { isPackage, type AdminProduct } from "@/lib/admin/models";
 import {
-  applyPercentOff,
-  DISCOUNT_PERCENTS,
   discountPercentOf,
   formatEuro,
   isDiscounted,
+  productSaleCents,
+  sumProductSaleCents,
 } from "@/lib/admin/money";
 import { offerStatus } from "@/lib/admin/productOffer";
 import { useAdminStore } from "@/lib/admin/store";
@@ -48,9 +64,9 @@ import { useAdminStore } from "@/lib/admin/store";
 type View = "offers" | "packages" | "all";
 
 const VIEWS: { id: View; label: string; matches: (row: AdminProduct) => boolean }[] = [
+  { id: "all", label: "All products", matches: () => true },
   { id: "offers", label: "Special offers", matches: (row) => row.specialOffer },
   { id: "packages", label: "Packages", matches: isPackage },
-  { id: "all", label: "All products", matches: () => true },
 ];
 
 const ADD_LABELS: Record<View, string> = {
@@ -65,29 +81,73 @@ function viewFromUrl(): View {
   return value === "offers" || value === "packages" ? value : "all";
 }
 
-const COLUMN_LABELS = {
-  type: "Type",
-  offer: "Special offer",
-  category: "Category",
-  price: "Price",
-  discount: "Discount",
-  published: "Published",
-  dateAdded: "Date Added",
-  lastUpdated: "Last Updated",
+/**
+ * Optional columns and the screen width from which each appears. On phones
+ * the table shows just one of them next to the name (price unless the user
+ * picks another under "Columns"); from tablet width, any number can be ticked.
+ */
+const COLUMNS: Record<
+  "price" | "published" | "offer" | "category" | "type" | "discount" | "dateAdded" | "lastUpdated",
+  { label: string; from: "sm" | "md" | "lg" | "xl"; sortFirst: SortDirection }
+> = {
+  price: { label: "Price", from: "sm", sortFirst: "asc" },
+  published: { label: "Published", from: "sm", sortFirst: "desc" },
+  offer: { label: "Special offer", from: "md", sortFirst: "desc" },
+  category: { label: "Category", from: "lg", sortFirst: "asc" },
+  type: { label: "Type", from: "lg", sortFirst: "asc" },
+  discount: { label: "Discount", from: "xl", sortFirst: "desc" },
+  dateAdded: { label: "Date added", from: "xl", sortFirst: "desc" },
+  lastUpdated: { label: "Last updated", from: "xl", sortFirst: "desc" },
+};
+
+type ColumnKey = keyof typeof COLUMNS;
+
+/** Visibility from tablet width up (`sm:` and wider); phones are handled separately. */
+const FROM_SM_UP = {
+  sm: "sm:table-cell",
+  md: "sm:hidden md:table-cell",
+  lg: "sm:hidden lg:table-cell",
+  xl: "sm:hidden xl:table-cell",
 } as const;
 
-type ColumnKey = keyof typeof COLUMN_LABELS;
-
 const cell = "px-2.5 py-2.5 sm:px-3 lg:px-4 lg:py-3";
+
+/** Live offers first when sorting the Special offer column. */
+const OFFER_RANK = { live: 4, scheduled: 3, ended: 2, hidden: 1, none: 0 } as const;
+
+/** What each column sorts by; anything else falls back to the product's sort order. */
+function sortValue(row: AdminProduct, key: string, categoryNames: Map<string, string>) {
+  switch (key) {
+    case "name":
+      return row.name;
+    case "price":
+      return productSaleCents(row);
+    case "published":
+      return row.published ? 1 : 0;
+    case "offer":
+      return OFFER_RANK[offerStatus(row)];
+    case "category":
+      return categoryNames.get(row.categoryId) ?? null;
+    case "type":
+      return isPackage(row) ? "Package" : "Product";
+    case "discount":
+      return discountPercentOf(row);
+    case "dateAdded":
+      return row.createdAt;
+    case "lastUpdated":
+      return row.updatedAt;
+    default:
+      return row.sortOrder;
+  }
+}
 
 /** The single admin page for products, special offers and packages. */
 export function ProductsAdmin() {
   const { data, patch } = useAdminStore();
   // Admin only renders in the browser, so the URL can be read on first render.
   const [view, setView] = useState<View>(viewFromUrl);
-  const [editing, setEditing] = useState<{ product: AdminProduct; isNew: boolean } | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<{ product: AdminProduct; isNew: boolean } | null>(null);
+  const [discountOpen, setDiscountOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [offerFilter, setOfferFilter] = useState<OfferFilter>("all");
@@ -97,57 +157,62 @@ export function ProductsAdmin() {
   const [publishedFilter, setPublishedFilter] = useState<PublishedFilter>("all");
   const [dateAddedFilter, setDateAddedFilter] = useState<DateFilter>("all");
   const [lastUpdatedFilter, setLastUpdatedFilter] = useState<DateFilter>("all");
-  const [discountTarget, setDiscountTarget] = useState<"category" | "brand" | "selected">(
-    "selected",
-  );
-  const [discountCategory, setDiscountCategory] = useState(data.categories[0]?.id ?? "");
-  const [discountBrand, setDiscountBrand] = useState("");
-  const [discountPlan, setDiscountPlan] = useState<DiscountPlan | null>(null);
-  const [discountError, setDiscountError] = useState("");
-  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [mobileColumn, setMobileColumn] = useState<ColumnKey>("price");
   const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
-    type: true,
+    price: true,
+    published: true,
     offer: true,
     category: true,
-    price: true,
+    type: true,
     discount: true,
-    published: true,
     dateAdded: true,
     lastUpdated: true,
   });
-  const columnsRef = useRef<HTMLDivElement>(null);
 
-  const currentView = VIEWS.find((item) => item.id === view) ?? VIEWS[2];
+  const currentView = VIEWS.find((item) => item.id === view) ?? VIEWS[0];
   // The Type column is redundant on the Packages view.
   const shown = { ...columns, type: columns.type && view !== "packages" };
-  const visibleColumnCount = Object.values(shown).filter(Boolean).length;
+  const columnKeys = (Object.keys(COLUMNS) as ColumnKey[]).filter(
+    (key) => !(key === "type" && view === "packages"),
+  );
+  const phoneColumn = columnKeys.includes(mobileColumn) ? mobileColumn : "price";
+  // Ticked columns, plus the phone column (which may be unticked for wider screens).
+  const shownKeys = columnKeys.filter((key) => shown[key] || key === phoneColumn);
+
+  /** Responsive classes for a column's header and cells. */
+  function columnClass(key: ColumnKey) {
+    const onPhone = key === phoneColumn ? "table-cell" : "hidden";
+    const fromTablet = shown[key] ? FROM_SM_UP[COLUMNS[key].from] : "sm:hidden";
+    return `${onPhone} ${fromTablet}`;
+  }
 
   const categoryName = (id: string) =>
     data.categories.find((category) => category.id === id)?.name ?? "—";
 
-  // Brands that at least one product is tagged with, for the discount panel.
-  const discountBrands = useMemo(() => {
-    const used = new Set(data.products.flatMap((row) => row.brandIds));
-    return data.brands
-      .filter((brand) => used.has(brand.id))
-      .sort((a, b) => a.name.localeCompare(b.name, "en"));
-  }, [data.brands, data.products]);
-  const brandId = discountBrand || discountBrands[0]?.id || "";
-  const brandName = data.brands.find((brand) => brand.id === brandId)?.name ?? "";
+  const { sort, toggle: toggleSort } = useTableSort({ key: "sortOrder", direction: "asc" });
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     const byId = new Map(data.products.map((row) => [row.id, row]));
+    const categoryNames = new Map(data.categories.map((category) => [category.id, category.name]));
     return data.products
       .filter(currentView.matches)
       .slice()
       .sort((a, b) => a.sortOrder - b.sortOrder)
+      // Stable sort, so equal values keep the sort order above.
+      .sort((a, b) =>
+        compareSortValues(
+          sortValue(a, sort.key, categoryNames),
+          sortValue(b, sort.key, categoryNames),
+          sort.direction,
+        ),
+      )
       .filter((row) => matchesTypeFilter(row, typeFilter))
       .filter((row) => matchesOfferFilter(row, offerFilter))
       .filter((row) => categoryFilter === "all" || row.categoryId === categoryFilter)
       .filter((row) => matchesPriceFilter(row, priceFilter))
       .filter((row) => matchesDiscountFilter(row, discountFilter))
-      .filter((row) => publishedFilter === "all" || row.published === (publishedFilter === "yes"))
+      .filter((row) => matchesPublishedFilter(row.published, publishedFilter))
       .filter((row) => matchesDateFilter(row.createdAt, dateAddedFilter))
       .filter((row) => matchesDateFilter(row.updatedAt, lastUpdatedFilter))
       .filter((row) => {
@@ -166,6 +231,7 @@ export function ProductsAdmin() {
   }, [
     categoryFilter,
     currentView,
+    data.categories,
     data.products,
     dateAddedFilter,
     discountFilter,
@@ -174,20 +240,16 @@ export function ProductsAdmin() {
     priceFilter,
     publishedFilter,
     search,
+    sort,
     typeFilter,
   ]);
 
   const selection = useRowSelection(rows);
   const selectedRows = data.products.filter((row) => selection.isSelected(row.id));
-
-  useEffect(() => {
-    if (!columnsOpen) return;
-    const onPointer = (event: MouseEvent) => {
-      if (!columnsRef.current?.contains(event.target as Node)) setColumnsOpen(false);
-    };
-    window.addEventListener("mousedown", onPointer);
-    return () => window.removeEventListener("mousedown", onPointer);
-  }, [columnsOpen]);
+  const bulk = useBulkFlag({
+    noun: "product",
+    onApply: (field, ids, value) => patch("products", ids, (row) => ({ ...row, [field]: value })),
+  });
 
   function resetFilters() {
     setTypeFilter("all");
@@ -200,16 +262,6 @@ export function ProductsAdmin() {
     setLastUpdatedFilter("all");
   }
 
-  const filtersAtDefault =
-    typeFilter === "all" &&
-    offerFilter === "all" &&
-    categoryFilter === "all" &&
-    priceFilter === "all" &&
-    discountFilter === "all" &&
-    publishedFilter === "all" &&
-    dateAddedFilter === "all" &&
-    lastUpdatedFilter === "all";
-
   function changeView(next: View) {
     setView(next);
     resetFilters();
@@ -217,23 +269,6 @@ export function ProductsAdmin() {
     if (next === "all") url.searchParams.delete("view");
     else url.searchParams.set("view", next);
     window.history.replaceState(null, "", url);
-  }
-
-  function updateColumn(key: ColumnKey, visible: boolean) {
-    setColumns((current) => ({ ...current, [key]: visible }));
-    if (visible) return;
-    // Hiding a column clears its filter so rows don't vanish for no visible reason.
-    const clear: Partial<Record<ColumnKey, () => void>> = {
-      type: () => setTypeFilter("all"),
-      offer: () => setOfferFilter("all"),
-      category: () => setCategoryFilter("all"),
-      price: () => setPriceFilter("all"),
-      discount: () => setDiscountFilter("all"),
-      published: () => setPublishedFilter("all"),
-      dateAdded: () => setDateAddedFilter("all"),
-      lastUpdated: () => setLastUpdatedFilter("all"),
-    };
-    clear[key]?.();
   }
 
   function startNew() {
@@ -248,57 +283,30 @@ export function ProductsAdmin() {
     });
   }
 
-  function applyDiscount(percent: number) {
-    const ids =
-      discountTarget === "category"
-        ? data.products.filter((row) => row.categoryId === discountCategory).map((row) => row.id)
-        : discountTarget === "brand"
-          ? data.products.filter((row) => row.brandIds.includes(brandId)).map((row) => row.id)
-          : selection.selected;
-    if (ids.length === 0) {
-      setDiscountError(
-        discountTarget === "category"
-          ? "Choose a category first."
-          : discountTarget === "brand"
-            ? "Choose a brand first."
-            : "Select one or more products first.",
-      );
-      return;
-    }
-    const priced = data.products.filter(
-      (row) => ids.includes(row.id) && row.priceCents != null && row.priceCents > 0,
-    );
-    if (priced.length === 0) {
-      setDiscountError("None of those products have a price to discount.");
-      return;
-    }
-    const existing = priced.filter(isDiscounted);
-    setDiscountError("");
-    setDiscountPlan({
-      percent,
-      label:
-        discountTarget === "category"
-          ? `${categoryName(discountCategory)} category`
-          : discountTarget === "brand"
-            ? `${brandName} products`
-            : `${priced.length} selected product${priced.length === 1 ? "" : "s"}`,
-      fresh: priced.filter((row) => !isDiscounted(row)),
-      existing,
-      includeExisting: existing.map((row) => row.id),
-    });
-  }
+  // Packages hold plain products only, and offer items can't be bundled again.
+  const packageBlocker =
+    selectedRows.length < 2
+      ? "Tick two or more products."
+      : selectedRows.some(isPackage)
+        ? "Packages can't go inside another package."
+        : selectedRows.some((row) => row.specialOffer)
+          ? "Untick products that are already special offers."
+          : null;
 
-  function confirmDiscount() {
-    if (!discountPlan) return;
-    const ids = [...discountPlan.fresh.map((row) => row.id), ...discountPlan.includeExisting];
-    const percent = discountPlan.percent;
-    if (ids.length > 0) {
-      patch("products", ids, (row) => ({
-        ...row,
-        discountPriceCents: applyPercentOff(row.priceCents as number, percent),
-      }));
-    }
-    setDiscountPlan(null);
+  function startPackageFromSelection() {
+    if (packageBlocker) return;
+    const totals = sumProductSaleCents(selectedRows);
+    setEditing({
+      isNew: true,
+      product: emptyProduct({
+        kind: "package",
+        categoryId: "",
+        sortOrder: data.products.length,
+        productIds: selectedRows.map((row) => row.id),
+        // Full price defaults to the products' combined price when they all have one.
+        priceCents: totals.missing === 0 ? totals.total : null,
+      }),
+    });
   }
 
   function clearDiscount(ids: string[]) {
@@ -322,410 +330,257 @@ export function ProductsAdmin() {
     );
   }
 
+  const filters: FilterDef[] = [
+    ...(view === "packages"
+      ? []
+      : [
+          {
+            key: "type",
+            label: "Type",
+            value: typeFilter,
+            options: TYPE_OPTIONS,
+            onChange: (value: string) => setTypeFilter(value as TypeFilter),
+          },
+        ]),
+    {
+      key: "offer",
+      label: "Special offer",
+      value: offerFilter,
+      options: offerOptions(view === "offers"),
+      onChange: (value) => setOfferFilter(value as OfferFilter),
+    },
+    {
+      key: "category",
+      label: "Category",
+      value: categoryFilter,
+      options: [
+        { value: "all", label: "All" },
+        ...data.categories.map((category) => ({ value: category.id, label: category.name })),
+      ],
+      onChange: setCategoryFilter,
+    },
+    {
+      key: "price",
+      label: "Price",
+      value: priceFilter,
+      options: PRICE_OPTIONS,
+      onChange: (value) => setPriceFilter(value as PriceFilter),
+    },
+    {
+      key: "discount",
+      label: "Discount",
+      value: discountFilter,
+      options: DISCOUNT_OPTIONS,
+      onChange: (value) => setDiscountFilter(value as DiscountFilter),
+    },
+    {
+      key: "published",
+      label: "Published",
+      value: publishedFilter,
+      options: PUBLISHED_OPTIONS,
+      onChange: (value) => setPublishedFilter(value as PublishedFilter),
+    },
+    {
+      key: "dateAdded",
+      label: "Date added",
+      value: dateAddedFilter,
+      options: DATE_OPTIONS,
+      onChange: (value) => setDateAddedFilter(value as DateFilter),
+    },
+    {
+      key: "lastUpdated",
+      label: "Last updated",
+      value: lastUpdatedFilter,
+      options: DATE_OPTIONS,
+      onChange: (value) => setLastUpdatedFilter(value as DateFilter),
+    },
+  ];
+
+  const actions: ActionDef[] = [
+    {
+      key: "publish",
+      label: "Publish",
+      needsSelection: true,
+      onSelect: () => bulk.start("published", true, selectedRows),
+    },
+    {
+      key: "unpublish",
+      label: "Unpublish",
+      needsSelection: true,
+      onSelect: () => bulk.start("published", false, selectedRows),
+    },
+    {
+      key: "offer-on",
+      label: "Mark as special offer",
+      needsSelection: true,
+      onSelect: () => bulk.start("specialOffer", true, selectedRows),
+    },
+    {
+      key: "offer-off",
+      label: "Remove from special offers",
+      needsSelection: true,
+      onSelect: () => bulk.start("specialOffer", false, selectedRows),
+    },
+    {
+      key: "package",
+      label: "Create package…",
+      needsSelection: true,
+      disabled: packageBlocker != null,
+      hint: packageBlocker ?? undefined,
+      onSelect: startPackageFromSelection,
+    },
+    { key: "discount", label: "Apply discount…", onSelect: () => setDiscountOpen(true) },
+    {
+      key: "discount-off",
+      label: "Remove discount",
+      needsSelection: true,
+      onSelect: () => clearDiscount(selection.selected),
+    },
+  ];
+
   const tableHeaders: AdminTableHeader[] = [
     "Select",
-    "Product",
-    ...(shown.type
-      ? [
-          {
-            label: "Type",
-            filter: (
-              <ColumnFilter
-                label="Type"
-                value={typeFilter}
-                onChange={(value) => setTypeFilter(value as TypeFilter)}
-              >
-                <option value="all">All</option>
-                <option value="product">Products</option>
-                <option value="package">Packages</option>
-              </ColumnFilter>
-            ),
-          },
-        ]
-      : []),
-    ...(shown.offer
-      ? [
-          {
-            label: "Special Offer",
-            filter: (
-              <ColumnFilter
-                label="Special offer"
-                value={offerFilter}
-                onChange={(value) => setOfferFilter(value as OfferFilter)}
-              >
-                <option value="all">All</option>
-                {view === "offers" ? null : <option value="any">Any special offer</option>}
-                <option value="live">Live</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="ended">Ended</option>
-                <option value="hidden">Unpublished</option>
-                {view === "offers" ? null : <option value="none">Not an offer</option>}
-              </ColumnFilter>
-            ),
-          },
-        ]
-      : []),
-    ...(shown.category
-      ? [
-          {
-            label: "Category",
-            filter: (
-              <ColumnFilter
-                label="Category"
-                value={categoryFilter}
-                onChange={(value) => {
-                  setCategoryFilter(value);
-                  if (value !== "all") setDiscountCategory(value);
-                }}
-              >
-                <option value="all">All</option>
-                {data.categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </ColumnFilter>
-            ),
-          },
-        ]
-      : []),
-    ...(shown.price
-      ? [
-          {
-            label: "Price",
-            filter: (
-              <ColumnFilter
-                label="Price"
-                value={priceFilter}
-                onChange={(value) => setPriceFilter(value as PriceFilter)}
-              >
-                <option value="all">All</option>
-                <option value="priced">Has a price</option>
-                <option value="none">No price</option>
-                <option value="under-250">Under €250</option>
-                <option value="250-500">€250–€500</option>
-                <option value="500-1000">€500–€1,000</option>
-                <option value="1000-2500">€1,000–€2,500</option>
-                <option value="over-2500">Over €2,500</option>
-              </ColumnFilter>
-            ),
-          },
-        ]
-      : []),
-    ...(shown.discount
-      ? [
-          {
-            label: "Discount",
-            filter: (
-              <ColumnFilter
-                label="Discount"
-                value={discountFilter}
-                onChange={(value) => setDiscountFilter(value as DiscountFilter)}
-              >
-                <option value="all">All</option>
-                <option value="yes">Discounted</option>
-                <option value="no">Not discounted</option>
-                {DISCOUNT_PERCENTS.map((percent) => (
-                  <option key={percent} value={String(percent)}>
-                    {percent}%
-                  </option>
-                ))}
-              </ColumnFilter>
-            ),
-          },
-        ]
-      : []),
-    ...(shown.published
-      ? [
-          {
-            label: "Published",
-            filter: <PublishedColumnFilter value={publishedFilter} onChange={setPublishedFilter} />,
-          },
-        ]
-      : []),
-    ...(shown.dateAdded
-      ? [
-          {
-            label: "Date Added",
-            filter: (
-              <DateColumnFilter label="Date added" value={dateAddedFilter} onChange={setDateAddedFilter} />
-            ),
-          },
-        ]
-      : []),
-    ...(shown.lastUpdated
-      ? [
-          {
-            label: "Last Updated",
-            filter: (
-              <DateColumnFilter
-                label="Last updated"
-                value={lastUpdatedFilter}
-                onChange={setLastUpdatedFilter}
-              />
-            ),
-          },
-        ]
-      : []),
-    "Actions",
+    { label: "Product", sortKey: "name" },
+    ...shownKeys.map((key) => ({
+      label: COLUMNS[key].label,
+      className: columnClass(key),
+      sortKey: key,
+      sortFirst: COLUMNS[key].sortFirst,
+    })),
+    "",
   ];
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Show">
-        {VIEWS.map((item) => {
-          const count = data.products.filter(item.matches).length;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={view === item.id}
-              className={view === item.id ? adminButton.primary : adminButton.secondary}
-              onClick={() => changeView(item.id)}
-            >
-              {item.label} ({count})
-            </button>
-          );
-        })}
-      </div>
-
-      <AdminListHeader
+      <AdminToolbar
         title={currentView.label}
         count={rows.length}
-        search={search}
-        onSearch={setSearch}
+        total={data.products.filter(currentView.matches).length}
         addLabel={ADD_LABELS[view]}
         onAdd={startNew}
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search products"
+        filters={filters}
+        onResetFilters={resetFilters}
+        actions={actions}
+        selectedCount={selection.selected.length}
+        onClearSelection={selection.clear}
+        tabs={
+          <AdminTabs
+            value={view}
+            onChange={changeView}
+            tabs={VIEWS.map((item) => ({
+              id: item.id,
+              label: item.label,
+              count: data.products.filter(item.matches).length,
+            }))}
+          />
+        }
+        extra={
+          <MenuButton label="Columns" align="right">
+            {(close) => (
+              <>
+                {/* Phones: one column next to the name. */}
+                <fieldset className="grid gap-2 sm:hidden">
+                  <legend className="mb-2 text-xs text-stone">Show next to the name</legend>
+                  {columnKeys.map((key) => (
+                    <label key={key} className="inline-flex items-center gap-2 text-sm text-parchment">
+                      <input
+                        type="radio"
+                        name="phone-column"
+                        checked={phoneColumn === key}
+                        onChange={() => {
+                          setMobileColumn(key);
+                          close();
+                        }}
+                        className="size-4 accent-brass"
+                      />
+                      {COLUMNS[key].label}
+                    </label>
+                  ))}
+                </fieldset>
+                {/* Tablet and desktop: any number of columns. */}
+                <div className="hidden gap-2 sm:grid">
+                  <p className="text-xs text-stone">
+                    Narrower screens hide some columns automatically.
+                  </p>
+                  {columnKeys.map((key) => (
+                    <AdminCheckbox
+                      key={key}
+                      label={COLUMNS[key].label}
+                      checked={columns[key]}
+                      onChange={(event) => setColumns({ ...columns, [key]: event.target.checked })}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </MenuButton>
+        }
       />
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          className={adminButton.secondary}
-          disabled={filtersAtDefault}
-          onClick={resetFilters}
-        >
-          Reset filters
-        </button>
-        <div className="relative" ref={columnsRef}>
-          <button
-            type="button"
-            className={adminButton.secondary}
-            aria-expanded={columnsOpen}
-            aria-haspopup="true"
-            onClick={() => setColumnsOpen((open) => !open)}
-          >
-            Columns
-          </button>
-          {columnsOpen ? (
-            <div className="absolute right-0 z-10 mt-2 w-56 border border-line bg-forest p-3">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-stone">Show columns</p>
-              <div className="mt-3 grid gap-2">
-                {(Object.keys(COLUMN_LABELS) as ColumnKey[]).map((key) => (
-                  <AdminCheckbox
-                    key={key}
-                    label={COLUMN_LABELS[key]}
-                    checked={columns[key]}
-                    onChange={(event) => updateColumn(key, event.target.checked)}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <div className="border border-line bg-forest p-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-brass">Apply discount</p>
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            <label className="inline-flex items-center gap-2 text-sm text-parchment">
-              <input
-                type="radio"
-                name="discount-target"
-                checked={discountTarget === "category"}
-                onChange={() => setDiscountTarget("category")}
-                className="accent-brass"
-              />
-              Category
-            </label>
-            <label className="inline-flex items-center gap-2 text-sm text-parchment">
-              <input
-                type="radio"
-                name="discount-target"
-                checked={discountTarget === "brand"}
-                onChange={() => setDiscountTarget("brand")}
-                className="accent-brass"
-              />
-              Brand
-            </label>
-            <label className="inline-flex items-center gap-2 text-sm text-parchment">
-              <input
-                type="radio"
-                name="discount-target"
-                checked={discountTarget === "selected"}
-                onChange={() => setDiscountTarget("selected")}
-                className="accent-brass"
-              />
-              Selected
-              {selection.selected.length > 0 ? ` (${selection.selected.length})` : ""}
-            </label>
-          </div>
-          {discountTarget === "category" ? (
-            <div className="mt-3 max-w-xs">
-              <AdminSelect
-                value={discountCategory}
-                onChange={(event) => setDiscountCategory(event.target.value)}
-              >
-                {data.categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </AdminSelect>
-            </div>
-          ) : null}
-          {discountTarget === "brand" ? (
-            <div className="mt-3 max-w-xs">
-              <AdminSelect
-                aria-label="Brand to discount"
-                value={brandId}
-                onChange={(event) => setDiscountBrand(event.target.value)}
-              >
-                {discountBrands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
-              </AdminSelect>
-            </div>
-          ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {DISCOUNT_PERCENTS.map((percent) => (
-              <button
-                key={percent}
-                type="button"
-                className={adminButton.primary}
-                onClick={() => applyDiscount(percent)}
-              >
-                {percent}%
-              </button>
-            ))}
-            <button
-              type="button"
-              className={adminButton.secondary}
-              disabled={selection.selected.length === 0}
-              onClick={() => clearDiscount(selection.selected)}
-            >
-              Remove from selected
-            </button>
-          </div>
-          {discountError ? (
-            <p className="mt-3 text-sm text-red-200" role="alert">
-              {discountError}
-            </p>
-          ) : null}
-        </div>
-        <BulkPublishPanel
-          noun="product"
-          field="specialOffer"
-          rows={selectedRows}
-          onApply={(ids, specialOffer) =>
-            patch("products", ids, (row) => ({ ...row, specialOffer }))
-          }
-        />
-        <BulkPublishPanel
-          noun="product"
-          rows={selectedRows}
-          onApply={(ids, published) => patch("products", ids, (row) => ({ ...row, published }))}
-        />
-      </div>
-      {discountPlan ? (
-        <DiscountConfirmModal
-          plan={discountPlan}
-          onChangeInclude={(includeExisting) => setDiscountPlan({ ...discountPlan, includeExisting })}
-          onCancel={() => setDiscountPlan(null)}
-          onConfirm={confirmDiscount}
-        />
-      ) : null}
-
-      <AdminTable headers={tableHeaders}>
-        <SelectAllRow selection={selection} colSpan={2 + visibleColumnCount} />
+      <AdminTable headers={tableHeaders} sort={sort} onSort={toggleSort}>
+        <SelectAllRow selection={selection} colSpan={2 + shownKeys.length} />
         {rows.map((row) => {
           const discounted = isDiscounted(row);
           const percent = discountPercentOf(row);
           const status = offerStatus(row);
           const packaged = isPackage(row);
+          const values: Record<ColumnKey, React.ReactNode> = {
+            price: discounted ? (
+              <span className="whitespace-nowrap">
+                <span className="mr-2 text-stone line-through">{formatEuro(row.priceCents)}</span>
+                {formatEuro(row.discountPriceCents)}
+              </span>
+            ) : (
+              formatEuro(row.priceCents, row.priceDisplay)
+            ),
+            published: row.published ? "Yes" : "No",
+            offer: (
+              <span className={status === "live" ? "text-brass" : undefined}>
+                {OFFER_STATUS_LABELS[status]}
+              </span>
+            ),
+            category: row.categoryId ? categoryName(row.categoryId) : "—",
+            type: packaged ? "Package" : "Product",
+            discount: discounted ? (
+              <span className="text-brass">{`Yes${percent != null ? ` · ${percent}%` : ""}`}</span>
+            ) : (
+              "No"
+            ),
+            dateAdded: <span className="whitespace-nowrap tabular-nums">{formatAdminDate(row.createdAt)}</span>,
+            lastUpdated: <span className="whitespace-nowrap tabular-nums">{formatAdminDate(row.updatedAt)}</span>,
+          };
+          // Status the hidden columns would show, so narrow screens don't lose it.
+          const tags = [
+            !row.published ? "Unpublished" : null,
+            status !== "none" ? `Offer: ${OFFER_STATUS_LABELS[status]}` : null,
+            packaged ? `Package · ${row.productIds.length} products` : null,
+          ].filter(Boolean);
           return (
-            <tr key={row.id}>
+            <tr key={row.id} {...selectableRowProps(selection, row.id)}>
               <SelectRowCell selection={selection} id={row.id} label={row.name} />
               <td className={`${cell} text-cream`}>
                 {row.name}
                 {packaged ? (
-                  <span className="mt-0.5 block text-xs text-stone">
+                  <span className="mt-0.5 hidden text-xs text-stone md:block">
                     {row.productIds.length} product{row.productIds.length === 1 ? "" : "s"}
                   </span>
                 ) : null}
+                {tags.length > 0 ? (
+                  <span className="mt-0.5 block text-xs text-stone md:hidden">{tags.join(" · ")}</span>
+                ) : null}
               </td>
-              {shown.type ? (
-                <td className={`${cell} text-parchment`}>{packaged ? "Package" : "Product"}</td>
-              ) : null}
-              {shown.offer ? (
-                <td className={`${cell} ${status === "live" ? "text-brass" : "text-parchment"}`}>
-                  {OFFER_STATUS_LABELS[status]}
+              {shownKeys.map((key) => (
+                <td key={key} className={`${cell} text-parchment ${columnClass(key)}`}>
+                  {values[key]}
                 </td>
-              ) : null}
-              {shown.category ? (
-                <td className={`${cell} text-parchment`}>
-                  {row.categoryId ? categoryName(row.categoryId) : "—"}
-                </td>
-              ) : null}
-              {shown.price ? (
-                <td className={`${cell} text-parchment`}>
-                  {discounted ? (
-                    <span>
-                      <span className="mr-2 text-stone line-through">{formatEuro(row.priceCents)}</span>
-                      {formatEuro(row.discountPriceCents)}
-                    </span>
-                  ) : (
-                    formatEuro(row.priceCents, row.priceDisplay)
-                  )}
-                </td>
-              ) : null}
-              {shown.discount ? (
-                <td className={cell}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={discounted ? "text-brass" : "text-parchment"}>
-                      {discounted ? `Yes${percent != null ? ` · ${percent}%` : ""}` : "No"}
-                    </span>
-                    {discounted ? (
-                      <button
-                        type="button"
-                        className="text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
-                        onClick={() => clearDiscount([row.id])}
-                      >
-                        Remove
-                      </button>
-                    ) : null}
-                  </div>
-                </td>
-              ) : null}
-              {shown.published ? (
-                <td className={`${cell} text-parchment`}>{row.published ? "Yes" : "No"}</td>
-              ) : null}
-              {shown.dateAdded ? (
-                <td className={`${cell} whitespace-nowrap text-parchment tabular-nums`}>
-                  {formatAdminDate(row.createdAt)}
-                </td>
-              ) : null}
-              {shown.lastUpdated ? (
-                <td className={`${cell} whitespace-nowrap text-parchment tabular-nums`}>
-                  {formatAdminDate(row.updatedAt)}
-                </td>
-              ) : null}
+              ))}
               <td className={`${cell} text-right`}>
                 <button
                   type="button"
-                  className="text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
+                  className={buttonClass({ variant: "ghost", size: "xs" })}
                   onClick={() => setEditing({ product: row, isNew: false })}
                 >
                   Edit
@@ -735,6 +590,11 @@ export function ProductsAdmin() {
           );
         })}
       </AdminTable>
+
+      {bulk.modal}
+      {discountOpen ? (
+        <DiscountDialog selectedIds={selection.selected} onClose={() => setDiscountOpen(false)} />
+      ) : null}
     </div>
   );
 }

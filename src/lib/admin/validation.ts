@@ -19,6 +19,14 @@ export function requiredText(
   return value?.trim() ? undefined : `${label} is required.`;
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function validateEmail(value: string | null | undefined, label = "Email") {
+  const email = value?.trim() ?? "";
+  if (!email) return `${label} is required.`;
+  return EMAIL_PATTERN.test(email) ? undefined : `Enter a valid ${label.toLowerCase()}.`;
+}
+
 export function validateSlugValue(
   value: string,
   taken: string[],

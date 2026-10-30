@@ -5,18 +5,12 @@ type ModuleNavProps = {
   progress: LearnProgress;
   activeSlug: string;
   onSelect: (slug: string) => void;
-  resetArmed: boolean;
-  onResetArm: () => void;
-  onReset: () => void;
 };
 
 export function ModuleNav({
   progress,
   activeSlug,
   onSelect,
-  resetArmed,
-  onResetArm,
-  onReset,
 }: ModuleNavProps) {
   const passedCount = learnerCourse.lessons.filter(
     (lesson) => progress.lessons[lesson.slug]?.passed,
@@ -64,25 +58,6 @@ export function ModuleNav({
           );
         })}
       </ol>
-      <div className="mt-4 hidden lg:block">
-        {resetArmed ? (
-          <button
-            type="button"
-            onClick={onReset}
-            className="text-[11px] uppercase tracking-[0.18em] text-brass hover:text-cream"
-          >
-            Clear this preview
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onResetArm}
-            className="text-[11px] uppercase tracking-[0.18em] text-stone hover:text-brass"
-          >
-            Reset this preview
-          </button>
-        )}
-      </div>
     </nav>
   );
 }

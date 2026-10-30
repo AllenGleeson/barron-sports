@@ -1,118 +1,75 @@
-import { readJson, writeJson, writeStorage } from "@/lib/browserStorage";
 import { formatEuro } from "@/lib/admin/money";
 
-const STORAGE_KEY = "barron-course-enrol-preview-v2";
-
 /**
- * Preview store that mirrors the planned live stack:
- * - Supabase Auth + `profiles` / `course_enrolments` tables
- * - Stripe Checkout Session + PaymentIntent (via Vercel Route Handlers)
- * - Stripe webhooks write paid state into Supabase; the learn gate reads that row
+ * The online course as a product. Stripe Checkout charges `priceCents` (no Stripe
+ * Price object is needed), and the server checks the amount on the paid session.
  *
- * This file only uses localStorage so the flow can be tested without Stripe or Supabase.
+ * Enrolment flow: register (Supabase Auth) → course dashboard → Purchase → Stripe
+ * embedded Checkout → server confirms the payment and writes `course_enrolments`
+ * → /course/learn opens.
  */
-
 const COURSE_PRICE_CENTS = 4900;
 
 export const courseEnrolmentOffer = {
   title: "Firearms safety course",
+  description: "Online firearms safety course from Barron Sports, Ennis.",
   priceCents: COURSE_PRICE_CENTS,
   priceDisplay: formatEuro(COURSE_PRICE_CENTS),
   currency: "eur",
-  /** Placeholder Stripe Price id for the live Checkout Session */
-  stripePriceId: "price_preview_firearms_safety",
-  provider: "Stripe",
-  store: "Supabase",
-  priceNote:
-    "One-time course fee. This preview does not call Stripe or write to Supabase.",
 } as const;
 
+/**
+ * Where a learner is with paying: "registered" (account only, no enrolment row),
+ * "checkout_created" (opened Stripe Checkout) or "paid".
+ */
 export type CourseEnrolmentStatus = "registered" | "checkout_created" | "paid";
 
+/** A learner's enrolment, as read from the `course_enrolments` table. */
 export type CourseEnrolment = {
-  /** Mirrors `profiles.id` / Supabase Auth user id */
-  userId: string;
-  name: string;
-  email: string;
   status: CourseEnrolmentStatus;
-  registeredAt: string;
   paidAt: string | null;
-  stripeCustomerId: string | null;
-  stripeCheckoutSessionId: string | null;
-  stripePaymentIntentId: string | null;
+  amountCents: number | null;
+  /** The name fixed at checkout; the completion record always uses it. */
+  certificateName: string | null;
+  /** Set once by the server when the course is first finished. */
+  completedAt: string | null;
 };
 
-function randomHex(length: number) {
-  let value = "";
-  while (value.length < length) {
-    value += Math.floor(Math.random() * 0xffff)
-      .toString(16)
-      .padStart(4, "0");
-  }
-  return value.slice(0, length);
-}
+export const NO_ENROLMENT: CourseEnrolment = {
+  status: "registered",
+  paidAt: null,
+  amountCents: null,
+  certificateName: null,
+  completedAt: null,
+};
 
-export function createPreviewUserId() {
-  return `usr_${randomHex(24)}`;
-}
+/** The columns `enrolmentFromRow` reads. */
+export const ENROLMENT_COLUMNS = "status, paid_at, amount_cents, certificate_name, completed_at";
 
-export function createStripeCustomerId() {
-  return `cus_preview_${randomHex(14)}`;
-}
-
-export function createStripeCheckoutSessionId() {
-  return `cs_test_preview_${randomHex(24)}`;
-}
-
-export function createStripePaymentIntentId() {
-  return `pi_preview_${randomHex(24)}`;
-}
-
-export function loadEnrolment(): CourseEnrolment | null {
-  const parsed = readJson(STORAGE_KEY) as Partial<CourseEnrolment> | null;
-  if (!parsed || typeof parsed !== "object") return null;
-  if (
-    typeof parsed.userId !== "string" ||
-    typeof parsed.name !== "string" ||
-    typeof parsed.email !== "string" ||
-    typeof parsed.registeredAt !== "string" ||
-    (parsed.status !== "registered" &&
-      parsed.status !== "checkout_created" &&
-      parsed.status !== "paid")
-  ) {
-    return null;
-  }
-  if (!parsed.name.trim() || !parsed.email.trim()) return null;
+/** Turns a `course_enrolments` row (or no row) into a `CourseEnrolment`. */
+export function enrolmentFromRow(
+  row: {
+    status?: unknown;
+    paid_at?: unknown;
+    amount_cents?: unknown;
+    certificate_name?: unknown;
+    completed_at?: unknown;
+  } | null,
+): CourseEnrolment {
+  if (!row) return NO_ENROLMENT;
+  const status = row.status === "paid" || row.status === "checkout_created" ? row.status : "registered";
   return {
-    userId: parsed.userId,
-    name: parsed.name.trim(),
-    email: parsed.email.trim(),
-    status: parsed.status,
-    registeredAt: parsed.registeredAt,
-    paidAt: typeof parsed.paidAt === "string" ? parsed.paidAt : null,
-    stripeCustomerId:
-      typeof parsed.stripeCustomerId === "string" ? parsed.stripeCustomerId : null,
-    stripeCheckoutSessionId:
-      typeof parsed.stripeCheckoutSessionId === "string"
-        ? parsed.stripeCheckoutSessionId
+    status,
+    paidAt: typeof row.paid_at === "string" ? row.paid_at : null,
+    amountCents: typeof row.amount_cents === "number" ? row.amount_cents : null,
+    certificateName:
+      typeof row.certificate_name === "string" && row.certificate_name.trim()
+        ? row.certificate_name
         : null,
-    stripePaymentIntentId:
-      typeof parsed.stripePaymentIntentId === "string"
-        ? parsed.stripePaymentIntentId
-        : null,
+    completedAt: typeof row.completed_at === "string" ? row.completed_at : null,
   };
 }
 
-export function saveEnrolment(enrolment: CourseEnrolment) {
-  writeJson(STORAGE_KEY, enrolment);
-  return enrolment;
-}
-
-export function clearEnrolment() {
-  writeStorage(STORAGE_KEY, null);
-}
-
-export function hasCourseAccess(enrolment?: CourseEnrolment | null) {
-  const row = enrolment === undefined ? loadEnrolment() : enrolment;
-  return Boolean(row && row.status === "paid" && row.paidAt);
+export function isPaid(enrolment: CourseEnrolment) {
+  return enrolment.status === "paid";
 }

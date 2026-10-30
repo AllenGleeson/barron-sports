@@ -1,5 +1,5 @@
 import { readJson, writeJson } from "@/lib/browserStorage";
-import { learnerCourse } from "@/lib/course/curriculum";
+import { COURSE_UNLOCK_ALL, learnerCourse } from "@/lib/course/curriculum";
 
 const STORAGE_KEY = "barron-learn-preview-v1";
 
@@ -12,10 +12,8 @@ export type LessonProgress = {
   lastAnswers: Record<string, string> | null;
 };
 
+/** The learner's name comes from their account (the enrolment), not from here. */
 export type LearnProgress = {
-  name: string;
-  email: string;
-  emailedAt: string | null;
   completedAt: string | null;
   lessons: Record<string, LessonProgress>;
 };
@@ -37,9 +35,6 @@ export function createProgress(): LearnProgress {
     lessons[lesson.slug] = blankLesson();
   }
   return {
-    name: "",
-    email: "",
-    emailedAt: null,
     completedAt: null,
     lessons,
   };
@@ -76,12 +71,28 @@ export function normalizeProgress(raw: unknown): LearnProgress {
   }
 
   return {
-    name: typeof value.name === "string" ? value.name : "",
-    email: typeof value.email === "string" ? value.email : "",
-    emailedAt: typeof value.emailedAt === "string" ? value.emailedAt : null,
     completedAt: typeof value.completedAt === "string" ? value.completedAt : null,
     lessons,
   };
+}
+
+/** Whether a lesson's film or quiz can be opened yet. */
+export function isStepUnlocked(step: "read" | "watch" | "quiz", lesson: LessonProgress) {
+  if (COURSE_UNLOCK_ALL || step === "read") return true;
+  if (step === "watch") return lesson.read;
+  return lesson.read && lesson.watched;
+}
+
+/**
+ * Progress for a learner the server has recorded as finished: every lesson passed and
+ * `completedAt` set to the server's date. Keeps any scores and answers saved on this device.
+ */
+export function completedProgress(progress: LearnProgress, completedAt: string): LearnProgress {
+  const lessons = { ...progress.lessons };
+  for (const lesson of learnerCourse.lessons) {
+    lessons[lesson.slug] = { ...lessons[lesson.slug], read: true, watched: true, passed: true };
+  }
+  return { ...progress, lessons, completedAt };
 }
 
 export function allLessonsPassed(progress: LearnProgress) {
@@ -89,7 +100,7 @@ export function allLessonsPassed(progress: LearnProgress) {
 }
 
 export function isLessonUnlocked(index: number, progress: LearnProgress) {
-  if (index <= 0) return true;
+  if (COURSE_UNLOCK_ALL || index <= 0) return true;
   const previous = learnerCourse.lessons[index - 1];
   return Boolean(progress.lessons[previous.slug]?.passed);
 }
@@ -99,8 +110,8 @@ export function withCompletion(progress: LearnProgress): LearnProgress {
   if (finished && !progress.completedAt) {
     return { ...progress, completedAt: new Date().toISOString() };
   }
-  if (!finished && (progress.completedAt || progress.emailedAt)) {
-    return { ...progress, completedAt: null, emailedAt: null };
+  if (!finished && progress.completedAt) {
+    return { ...progress, completedAt: null };
   }
   return progress;
 }
