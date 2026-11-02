@@ -1,15 +1,60 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AdminUser, AdminUserChanges, UserRole } from "@/lib/admin/users";
+import type { AdminPayment, AdminUser, AdminUserChanges, UserRole } from "@/lib/admin/users";
 
-/** Calls an admin users route; throws an Error with the server's message on failure. */
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/admin/users/${path}`, {
+/** Calls an admin route; throws an Error with the server's message on failure. */
+async function adminCall<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`/api/admin/${path}`, {
     ...init,
     headers: init?.body ? { "Content-Type": "application/json" } : undefined,
   });
   const body = (await response.json().catch(() => ({}))) as T & { error?: string };
   if (!response.ok) throw new Error(body.error ?? "Something went wrong. Please try again.");
   return body;
+}
+
+/** Calls an admin users route. */
+function call<T>(path: string, init?: RequestInit) {
+  return adminCall<T>(`users/${path}`, init);
+}
+
+/**
+ * Marks an in-shop payment refunded (which removes the course access it gave).
+ * Returns the learner's updated account, or null if it was deleted.
+ */
+export async function refundPayment(id: string, reason: string) {
+  const { user } = await adminCall<{ user: AdminUser | null }>(`payments/${id}/refund/`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+  return user;
+}
+
+export type PaymentsState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; payments: AdminPayment[] };
+
+/** All course payments, loaded when the page opens; `reload` fetches them again. */
+export function useAdminPayments() {
+  const [state, setState] = useState<PaymentsState>({ status: "loading" });
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminCall<{ payments: AdminPayment[] }>("payments/")
+      .then(({ payments }) => {
+        if (!cancelled) setState({ status: "ready", payments });
+      })
+      .catch((error: Error) => {
+        if (!cancelled) setState({ status: "error", message: error.message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [version]);
+
+  const reload = useCallback(() => setVersion((value) => value + 1), []);
+  return { state, reload };
 }
 
 export async function updateUser(id: string, changes: AdminUserChanges) {

@@ -1,4 +1,4 @@
-import { courseEnrolmentOffer } from "@/lib/course/enrolment";
+import { COURSE_ID, courseEnrolmentOffer } from "@/lib/course/enrolment";
 import { recordCheckoutSession } from "@/lib/course/purchase";
 import { getStripe } from "@/lib/stripe/server";
 import { getRequestUser, getSupabaseAdmin, getSupabaseForRequest } from "@/lib/supabase/server";
@@ -31,8 +31,12 @@ export async function POST(request: Request) {
     ?.from("course_enrolments")
     .select("status")
     .eq("user_id", user.id)
+    .eq("course_id", COURSE_ID)
     .maybeSingle()) ?? { data: null };
-  if (enrolment?.status === "paid") return fail("You already have the course.", 409);
+  if (enrolment?.status === "active") return fail("You already have the course.", 409);
+  if (enrolment?.status === "revoked") {
+    return fail("Your access to the course was removed. Please contact the shop.", 409);
+  }
 
   const origin = new URL(request.url).origin;
   try {

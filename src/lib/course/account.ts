@@ -1,17 +1,23 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import type { QuizGrade } from "@/lib/course/curriculum";
 import {
+  COURSE_ID,
   ENROLMENT_COLUMNS,
-  enrolmentFromRow,
+  enrolmentFromRows,
   NO_ENROLMENT,
+  PAYMENT_COLUMNS,
+  paymentFromRow,
   type CourseEnrolment,
 } from "@/lib/course/enrolment";
+import type { LearnProgress } from "@/lib/course/progress";
 
 /**
  * Learner accounts for the online course, using Supabase Auth (email + password).
- * A learner can only change their own name and password. Their enrolment is read
- * from `course_enrolments`, which only the server can write.
+ * A learner can only change their own name and password. Their enrolment and payments
+ * are read from `course_enrolments` / `course_payments`, and their progress from
+ * `/api/course/progress/`; only the server writes any of them.
  */
 export type Learner = { id: string; email: string; name: string };
 
@@ -172,18 +178,72 @@ export async function changeLearnerPassword(email: string, current: string, next
   return error ? friendlyError(error) : null;
 }
 
-/**
- * Tells the server the learner has finished. The server sets the completion date once
- * and returns it; later calls return the same date.
- */
-export async function markCourseCompleted(): Promise<string | null> {
+/** Calls a course route; throws an Error with the server's message on failure. */
+async function courseCall<T>(path: string, body?: unknown): Promise<T> {
+  let response: Response;
   try {
-    const response = await fetch("/api/course/complete/", { method: "POST" });
-    const body = (await response.json()) as { completedAt?: string };
-    return response.ok && body.completedAt ? body.completedAt : null;
+    response = await fetch(`/api/course/${path}`, {
+      method: body === undefined ? "GET" : "POST",
+      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
   } catch {
-    return null;
+    throw new Error("You seem to be offline. Check your connection and try again.");
   }
+  const result = (await response.json().catch(() => ({}))) as T & { error?: string };
+  if (!response.ok) throw new Error(result.error ?? "Your progress couldn't be saved. Please try again.");
+  return result;
+}
+
+export type ProgressResponse = {
+  progress: LearnProgress;
+  /** Answers to prefill each quiz with while testing, by lesson slug; null otherwise. */
+  prefill: Record<string, Record<string, string>> | null;
+};
+
+/** The learner's saved progress. Only works once they have access to the course. */
+export function fetchCourseProgress() {
+  return courseCall<ProgressResponse>("progress/");
+}
+
+/** Marks a lesson's reading or film done; returns the updated progress. */
+export async function saveLessonStep(lesson: string, step: "read" | "watched") {
+  const { progress } = await courseCall<{ progress: LearnProgress }>("progress/", { lesson, step });
+  return progress;
+}
+
+export type QuizSubmission = { grade: QuizGrade; progress: LearnProgress; completedAt: string | null };
+
+/** Sends quiz answers to be graded and saved. Passing the last quiz completes the course. */
+export function submitQuizAnswers(lesson: string, answers: Record<string, string>) {
+  return courseCall<QuizSubmission>("quiz/", { lesson, answers });
+}
+
+export type ProgressState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | ({ status: "ready" } & ProgressResponse);
+
+/** The learner's progress, loaded once when `enabled` (i.e. they have access). */
+export function useCourseProgress(enabled: boolean): ProgressState {
+  const [state, setState] = useState<ProgressState>({ status: "loading" });
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    fetchCourseProgress()
+      .then((result) => {
+        if (!cancelled) setState({ status: "ready", ...result });
+      })
+      .catch((error: Error) => {
+        if (!cancelled) setState({ status: "error", message: error.message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return state;
 }
 
 export type EnrolmentState = { loading: true } | { loading: false; enrolment: CourseEnrolment };
@@ -197,14 +257,23 @@ export function useCourseEnrolment(userId: string | null, reloadKey = 0): Enrolm
     const supabase = getSupabaseBrowser();
     if (!userId || !supabase) return;
     let cancelled = false;
-    void supabase
-      .from("course_enrolments")
-      .select(ENROLMENT_COLUMNS)
-      .eq("user_id", userId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setResult({ key, enrolment: enrolmentFromRow(data) });
-      });
+    void Promise.all([
+      supabase
+        .from("course_enrolments")
+        .select(ENROLMENT_COLUMNS)
+        .eq("user_id", userId)
+        .eq("course_id", COURSE_ID)
+        .maybeSingle(),
+      supabase
+        .from("course_payments")
+        .select(PAYMENT_COLUMNS)
+        .eq("user_id", userId)
+        .eq("course_id", COURSE_ID),
+    ]).then(([enrolment, payments]) => {
+      if (cancelled) return;
+      const rows = (payments.data ?? []).map((row) => paymentFromRow(row));
+      setResult({ key, enrolment: enrolmentFromRows(enrolment.data, rows) });
+    });
     return () => {
       cancelled = true;
     };

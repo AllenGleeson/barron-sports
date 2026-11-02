@@ -7,7 +7,7 @@ import { RequireLearner } from "@/components/course/account/RequireLearner";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { useCourseEnrolment, type Learner } from "@/lib/course/account";
-import { isPaid } from "@/lib/course/enrolment";
+import { hasAccess } from "@/lib/course/enrolment";
 
 // Referenced in full so Next.js inlines it into the browser bundle.
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -43,7 +43,17 @@ function CheckoutForLearner({ learner }: { learner: Learner }) {
       </p>
     );
   }
-  if (isPaid(state.enrolment)) {
+  if (state.enrolment.status === "revoked") {
+    return (
+      <Message>
+        <p>Your access to the course was removed. Please contact the shop.</p>
+        <Button href="/course/dashboard" variant="secondary" className="mt-5">
+          Back to your dashboard
+        </Button>
+      </Message>
+    );
+  }
+  if (hasAccess(state.enrolment)) {
     return (
       <Message>
         <p>You already have the course.</p>

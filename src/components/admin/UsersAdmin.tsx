@@ -46,7 +46,7 @@ import {
 import { buttonClass } from "@/components/ui/styles";
 
 type View = "students" | "admins";
-type CourseFilter = "all" | "not-purchased" | "checkout" | "purchased" | "completed";
+type CourseFilter = "all" | "not-purchased" | "checkout" | "purchased" | "completed" | "revoked";
 type AccountFilter = "all" | UserAccountStatus;
 
 const VIEW_ROLES: Record<View, UserRole> = { students: "student", admins: "admin" };
@@ -64,6 +64,7 @@ const COURSE_OPTIONS: FilterOption[] = [
   { value: "checkout", label: "Checkout started, not paid" },
   { value: "purchased", label: "In progress" },
   { value: "completed", label: "Completed" },
+  { value: "revoked", label: "Access removed" },
 ];
 
 const ACCOUNT_OPTIONS: FilterOption[] = [
@@ -78,14 +79,15 @@ function matchesCourseFilter(row: AdminUser, filter: CourseFilter) {
   return courseState(row).kind === filter;
 }
 
-const COURSE_RANK = { "not-purchased": 0, purchased: 1, completed: 2 } as const;
+const COURSE_RANK = { "not-purchased": 0, revoked: 1, purchased: 2, completed: 3 } as const;
 
 function sortValue(row: AdminUser, key: string): string | number | null {
   switch (key) {
     case "user":
       return row.name || row.email;
     case "course":
-      return COURSE_RANK[courseState(row).kind];
+      // In-progress students sort by how far they've got.
+      return COURSE_RANK[courseState(row).kind] * 100 + row.progress.passed;
     case "paid":
       return row.enrolment.paidAt;
     case "account":
@@ -395,6 +397,12 @@ export function UsersAdmin() {
               </span>
               {course.kind === "completed" ? (
                 <span className="block text-xs text-stone">{formatAdminDate(course.completedAt)}</span>
+              ) : course.kind === "purchased" ? (
+                <span className="block text-xs text-stone">
+                  {row.progress.passed} of {row.progress.total} lessons passed
+                </span>
+              ) : course.kind === "revoked" ? (
+                <span className="block text-xs text-stone">{row.enrolment.revokeReason ?? ""}</span>
               ) : row.enrolment.status === "checkout_created" ? (
                 <span className="block text-xs text-stone">Checkout started</span>
               ) : null}
@@ -585,7 +593,7 @@ export function UsersAdmin() {
         >
           <p>
             {students
-              ? "Their account and course enrolment will be removed. This can't be undone."
+              ? "Their account, course access and progress will be removed. This can't be undone. Their payments stay on the Payments page."
               : "They will lose access to the admin area straight away. This can't be undone."}
           </p>
         </AdminConfirmModal>

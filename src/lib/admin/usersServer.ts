@@ -1,7 +1,16 @@
 import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { ENROLMENT_COLUMNS, enrolmentFromRow, NO_ENROLMENT } from "@/lib/course/enrolment";
-import type { AdminUser, AdminUserChanges } from "@/lib/admin/users";
+import { learnerCourse } from "@/lib/course/curriculum";
+import {
+  COURSE_ID,
+  ENROLMENT_COLUMNS,
+  enrolmentFromRows,
+  PAYMENT_COLUMNS,
+  paymentFromRow,
+  type CoursePayment,
+} from "@/lib/course/enrolment";
+import { grantEnrolment, revokeForPayment } from "@/lib/course/purchase";
+import type { AdminCourseProgress, AdminPayment, AdminUser, AdminUserChanges } from "@/lib/admin/users";
 import { getRequestUser, getSupabaseAdmin } from "@/lib/supabase/server";
 
 /** Far-future ban used to disable an account (Supabase has no separate "disabled" flag). */
@@ -47,12 +56,82 @@ async function allAuthUsers(supabase: SupabaseClient) {
   }
 }
 
-type EnrolmentRow = (NonNullable<Parameters<typeof enrolmentFromRow>[0]> & { updated_at?: unknown }) | null;
+type Row = Record<string, unknown>;
 
-function toAdminUser(user: User, enrolmentRow: EnrolmentRow): AdminUser {
+/** Course rows for some or all users, grouped by user id. */
+type CourseRows = {
+  enrolments: Map<string, Row>;
+  payments: Map<string, CoursePayment[]>;
+  progress: Map<string, Row[]>;
+};
+
+const PROGRESS_COLUMNS = "user_id, lesson_slug, read_at, watched_at, attempts, best_score, passed_at, updated_at";
+
+function groupBy<T>(rows: T[], key: (row: T) => string | null) {
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    const id = key(row);
+    if (!id) continue;
+    map.set(id, [...(map.get(id) ?? []), row]);
+  }
+  return map;
+}
+
+/** Loads enrolments, payments and progress for one user, or for everyone when `userId` is omitted. */
+async function loadCourseRows(supabase: SupabaseClient, userId?: string): Promise<CourseRows> {
+  const table = (name: string, columns: string) => {
+    const query = supabase.from(name).select(columns).eq("course_id", COURSE_ID);
+    return userId ? query.eq("user_id", userId) : query;
+  };
+  const [enrolments, payments, progress] = await Promise.all([
+    table("course_enrolments", `user_id, updated_at, ${ENROLMENT_COLUMNS}`),
+    table("course_payments", PAYMENT_COLUMNS),
+    table("course_progress", PROGRESS_COLUMNS),
+  ]);
+  if (enrolments.error) throw enrolments.error;
+  if (payments.error) throw payments.error;
+  if (progress.error) throw progress.error;
+  const paymentRows = (payments.data as unknown as Row[]).map(paymentFromRow);
+  paymentRows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return {
+    enrolments: new Map((enrolments.data as unknown as Row[]).map((row) => [String(row.user_id), row])),
+    payments: groupBy(paymentRows, (payment) => payment.userId),
+    progress: groupBy(progress.data as unknown as Row[], (row) => String(row.user_id)),
+  };
+}
+
+function progressFromRows(rows: Row[], completed: boolean): AdminCourseProgress {
+  const lessons = learnerCourse.lessons.map((lesson) => {
+    const row = rows.find((item) => item.lesson_slug === lesson.slug);
+    return {
+      slug: lesson.slug,
+      title: lesson.title,
+      read: Boolean(row?.read_at),
+      watched: Boolean(row?.watched_at),
+      attempts: typeof row?.attempts === "number" ? row.attempts : 0,
+      bestScore: typeof row?.best_score === "number" ? row.best_score : null,
+      passedAt: typeof row?.passed_at === "string" ? row.passed_at : null,
+    };
+  });
+  const passed = lessons.filter((lesson) => lesson.passedAt).length;
+  // A course recorded as finished counts as fully passed (e.g. finished before progress was saved).
+  return { passed: completed ? lessons.length : passed, total: lessons.length, lessons };
+}
+
+/** The latest of some ISO dates (ignoring missing ones). */
+function latestDate(...dates: unknown[]) {
+  return dates
+    .filter((date): date is string => typeof date === "string")
+    .sort()
+    .at(-1);
+}
+
+function toAdminUser(user: User, rows: CourseRows): AdminUser {
   const meta = user.user_metadata ?? {};
-  const enrolmentUpdated = typeof enrolmentRow?.updated_at === "string" ? enrolmentRow.updated_at : null;
-  const accountUpdated = user.updated_at ?? user.created_at;
+  const enrolmentRow = rows.enrolments.get(user.id) ?? null;
+  const payments = rows.payments.get(user.id) ?? [];
+  const progressRows = rows.progress.get(user.id) ?? [];
+  const enrolment = enrolmentFromRows(enrolmentRow, payments);
   return {
     id: user.id,
     role: isAdmin(user) ? "admin" : "student",
@@ -61,36 +140,30 @@ function toAdminUser(user: User, enrolmentRow: EnrolmentRow): AdminUser {
     email: user.email ?? "",
     phone: typeof meta.phone === "string" && meta.phone ? meta.phone : null,
     accountStatus: isDisabled(user) ? "disabled" : "active",
-    enrolment: enrolmentRow ? enrolmentFromRow(enrolmentRow) : NO_ENROLMENT,
+    enrolment,
+    payments,
+    progress: progressFromRows(progressRows, Boolean(enrolment.completedAt)),
     lastSignInAt: user.last_sign_in_at ?? null,
     createdAt: user.created_at,
     updatedAt:
-      enrolmentUpdated && new Date(enrolmentUpdated) > new Date(accountUpdated)
-        ? enrolmentUpdated
-        : accountUpdated,
+      latestDate(
+        user.updated_at ?? user.created_at,
+        enrolmentRow?.updated_at,
+        payments[0]?.createdAt,
+        ...progressRows.map((row) => row.updated_at),
+      ) ?? user.created_at,
   };
 }
 
 export async function listAdminUsers(supabase: SupabaseClient): Promise<AdminUser[]> {
-  const [users, enrolments] = await Promise.all([
-    allAuthUsers(supabase),
-    supabase.from("course_enrolments").select(`user_id, updated_at, ${ENROLMENT_COLUMNS}`),
-  ]);
-  if (enrolments.error) throw enrolments.error;
-  const byUser = new Map(enrolments.data.map((row) => [row.user_id as string, row]));
-  return users.map((user) => toAdminUser(user, byUser.get(user.id) ?? null));
+  const [users, rows] = await Promise.all([allAuthUsers(supabase), loadCourseRows(supabase)]);
+  return users.map((user) => toAdminUser(user, rows));
 }
 
 export async function getAdminUser(supabase: SupabaseClient, id: string): Promise<AdminUser> {
   const { data, error } = await supabase.auth.admin.getUserById(id);
   if (error || !data.user) throw new AdminError("That user doesn't exist.", 404);
-  const enrolment = await supabase
-    .from("course_enrolments")
-    .select(`updated_at, ${ENROLMENT_COLUMNS}`)
-    .eq("user_id", id)
-    .maybeSingle();
-  if (enrolment.error) throw enrolment.error;
-  return toAdminUser(data.user, enrolment.data);
+  return toAdminUser(data.user, await loadCourseRows(supabase, id));
 }
 
 /** Active admins other than `exceptId`. */
@@ -178,29 +251,141 @@ export async function applyChanges(
     }
   }
 
-  if (changes.markPaid) await markPaidInShop(supabase, target, changes.name);
+  if (changes.recordPayment) await recordPayment(supabase, me, target, changes.recordPayment, changes.name);
+  if (changes.access) await setAccess(supabase, target, changes.access);
 }
 
-/** Records a payment taken in the shop; the record name is fixed from now on. */
-async function markPaidInShop(supabase: SupabaseClient, target: User, newName?: string) {
+/**
+ * Records a payment taken in the shop (or free access) and opens the course. The record
+ * name is fixed from now on.
+ */
+async function recordPayment(
+  supabase: SupabaseClient,
+  me: User,
+  target: User,
+  payment: NonNullable<AdminUserChanges["recordPayment"]>,
+  newName?: string,
+) {
   const { data: existing, error } = await supabase
     .from("course_enrolments")
     .select("status")
     .eq("user_id", target.id)
+    .eq("course_id", COURSE_ID)
     .maybeSingle();
   if (error) throw error;
-  if (existing?.status === "paid") return;
+  if (existing?.status === "active") throw new AdminError("They already have the course.", 400);
+
   const name = (newName ?? target.user_metadata?.full_name ?? "").toString().trim();
   if (!name) throw new AdminError("Add the student's name first. It goes on their record.", 400);
+  if (payment.method !== "in_shop" && payment.method !== "free") {
+    throw new AdminError("Unknown payment method.", 400);
+  }
+  const amountCents = payment.method === "free" ? 0 : Math.round(Number(payment.amountCents));
+  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+    throw new AdminError("Enter the amount paid, or choose Free.", 400);
+  }
+
   const now = new Date().toISOString();
-  const { error: upsertError } = await supabase.from("course_enrolments").upsert({
-    user_id: target.id,
-    status: "paid",
-    amount_cents: null,
-    currency: null,
-    certificate_name: name,
-    paid_at: now,
-    updated_at: now,
-  });
-  if (upsertError) throw upsertError;
+  const { data: saved, error: insertError } = await supabase
+    .from("course_payments")
+    .insert({
+      user_id: target.id,
+      course_id: COURSE_ID,
+      method: payment.method,
+      status: "paid",
+      amount_cents: amountCents,
+      currency: "eur",
+      name,
+      email: target.email ?? "",
+      recorded_by: me.id,
+      note: payment.note?.trim() || null,
+      paid_at: now,
+      updated_at: now,
+    })
+    .select("id")
+    .single();
+  if (insertError) throw insertError;
+  await grantEnrolment(supabase, { userId: target.id, paymentId: saved.id, certificateName: name });
+}
+
+/** Removes course access (keeping the record and progress) or gives it back. */
+async function setAccess(
+  supabase: SupabaseClient,
+  target: User,
+  access: NonNullable<AdminUserChanges["access"]>,
+) {
+  const now = new Date().toISOString();
+  const revoke = access.status === "revoked";
+  const reason = access.reason?.trim() ?? "";
+  if (revoke && !reason) throw new AdminError("Say why access is being removed.", 400);
+  const { data, error } = await supabase
+    .from("course_enrolments")
+    .update(
+      revoke
+        ? { status: "revoked", revoked_at: now, revoke_reason: reason, updated_at: now }
+        : { status: "active", revoked_at: null, revoke_reason: null, updated_at: now },
+    )
+    .eq("user_id", target.id)
+    .eq("course_id", COURSE_ID)
+    .select("user_id");
+  if (error) throw error;
+  if (!data.length) throw new AdminError("They haven't bought the course.", 400);
+}
+
+/** Every course payment, newest first. */
+export async function listPayments(supabase: SupabaseClient): Promise<AdminPayment[]> {
+  const [users, payments] = await Promise.all([
+    allAuthUsers(supabase),
+    supabase.from("course_payments").select(PAYMENT_COLUMNS).eq("course_id", COURSE_ID),
+  ]);
+  if (payments.error) throw payments.error;
+  const names = new Map(
+    users.map((user) => [
+      user.id,
+      (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name) || user.email || "",
+    ]),
+  );
+  return (payments.data as unknown as Row[])
+    .map(paymentFromRow)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((payment) => ({
+      ...payment,
+      recordedByName: payment.recordedBy ? (names.get(payment.recordedBy) ?? "Deleted admin") : null,
+      accountExists: Boolean(payment.userId && names.has(payment.userId)),
+    }));
+}
+
+/**
+ * Marks an in-shop payment as refunded and removes the access it gave. Stripe payments
+ * are refunded in the Stripe dashboard instead; the webhook records them here.
+ */
+export async function refundShopPayment(supabase: SupabaseClient, id: string, reason?: string) {
+  const { data: payment, error } = await supabase
+    .from("course_payments")
+    .select("id, user_id, method, status, amount_cents, note")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!payment) throw new AdminError("That payment doesn't exist.", 404);
+  if (payment.method === "stripe") {
+    throw new AdminError("Refund online payments in the Stripe dashboard. They update here automatically.", 400);
+  }
+  if (payment.method === "free") throw new AdminError("Free access has nothing to refund. Remove access instead.", 400);
+  if (payment.status !== "paid") throw new AdminError("Only a paid payment can be refunded.", 400);
+
+  const now = new Date().toISOString();
+  const extra = reason?.trim();
+  const { error: updateError } = await supabase
+    .from("course_payments")
+    .update({
+      status: "refunded",
+      refunded_cents: payment.amount_cents,
+      refunded_at: now,
+      note: extra ? [payment.note, `Refund: ${extra}`].filter(Boolean).join("\n") : payment.note,
+      updated_at: now,
+    })
+    .eq("id", id);
+  if (updateError) throw updateError;
+  await revokeForPayment(supabase, id, "Refunded");
+  return typeof payment.user_id === "string" ? payment.user_id : null;
 }

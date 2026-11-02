@@ -11,10 +11,8 @@ import {
   adminButton,
 } from "@/components/admin/fields";
 import { formatAdminDate } from "@/components/admin/filters";
+import { UserCourse } from "@/components/admin/UserCourse";
 import {
-  courseState,
-  courseStateLabel,
-  ENROLMENT_STATUS_LABELS,
   ROLE_LABELS,
   ROLE_PERMISSIONS,
   SUPER_ADMIN_NOTE,
@@ -23,7 +21,6 @@ import {
   type UserRole,
 } from "@/lib/admin/users";
 import { deleteUser, inviteUser, sendPasswordReset, updateUser } from "@/lib/admin/usersApi";
-import { formatEuro } from "@/lib/admin/money";
 import {
   compactErrors,
   requiredText,
@@ -122,7 +119,7 @@ export function UserDetail({
   const [attempted, setAttempted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
-  const [confirm, setConfirm] = useState<"delete" | "paid" | null>(null);
+  const [confirm, setConfirm] = useState<"delete" | null>(null);
   const errors = attempted ? validate(draft, user, otherActiveAdmins) : {};
   const isNew = !user;
 
@@ -312,7 +309,7 @@ export function UserDetail({
           <PasswordReset user={user} />
           {/* Admins can buy the course too; show it whenever there's an enrolment. */}
           {user.role === "student" || user.enrolment.status !== "registered" ? (
-            <CourseSection user={user} onMarkPaid={() => setConfirm("paid")} />
+            <UserCourse user={user} onSaved={onSaved} />
           ) : null}
           {user.enrolment.completedAt ? (
             <CompletionRecordAdmin user={user} completedAt={user.enrolment.completedAt} />
@@ -337,29 +334,9 @@ export function UserDetail({
             }
           }}
         >
-          <p>Their account and course enrolment will be removed. This can&apos;t be undone.</p>
-        </AdminConfirmModal>
-      ) : null}
-      {user && confirm === "paid" ? (
-        <AdminConfirmModal
-          eyebrow="Paid in the shop"
-          title={`Mark ${user.name || user.email} as paid?`}
-          confirmLabel="Mark as paid"
-          onCancel={() => setConfirm(null)}
-          onConfirm={async () => {
-            setConfirm(null);
-            try {
-              onSaved(await updateUser(user.id, { markPaid: true }));
-              setMessage({ text: "Marked as paid. The course is now open to them." });
-            } catch (error) {
-              setMessage({ text: (error as Error).message, error: true });
-            }
-          }}
-        >
-          <p>Use this when they paid in the shop. The course opens for them straight away.</p>
           <p>
-            Their completion record will be issued to <strong>{user.name || "(no name)"}</strong>,
-            and that can&apos;t be changed afterwards.
+            Their account, course access and progress will be removed. This can&apos;t be undone.
+            Their payments stay on the Payments page.
           </p>
         </AdminConfirmModal>
       ) : null}
@@ -443,56 +420,6 @@ function PasswordReset({ user }: { user: AdminUser }) {
         >
           {result.text}
         </p>
-      ) : null}
-    </section>
-  );
-}
-
-function CourseSection({ user, onMarkPaid }: { user: AdminUser; onMarkPaid: () => void }) {
-  const state = courseState(user);
-  const { enrolment } = user;
-  const rows = [
-    { label: "Payment", value: ENROLMENT_STATUS_LABELS[enrolment.status] },
-    { label: "Date paid", value: enrolment.paidAt ? formatRecordDate(enrolment.paidAt) : "—" },
-    {
-      label: "Amount",
-      value:
-        enrolment.status === "paid"
-          ? enrolment.amountCents != null
-            ? `${formatEuro(enrolment.amountCents)} online`
-            : "Paid in the shop"
-          : "—",
-    },
-    { label: "Name on record", value: enrolment.certificateName ?? "—" },
-    {
-      label: "Completed",
-      value: enrolment.completedAt ? formatRecordDate(enrolment.completedAt) : "Not yet",
-    },
-  ];
-
-  return (
-    <section className={sectionClass} aria-labelledby="user-course-heading">
-      <h2 id="user-course-heading" className="font-display text-2xl text-cream">
-        Course: {courseStateLabel(state)}
-      </h2>
-      <dl className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {rows.map((row) => (
-          <div key={row.label}>
-            <dt className="text-[11px] uppercase tracking-[0.2em] text-stone">{row.label}</dt>
-            <dd className="mt-1 text-base text-cream">{row.value}</dd>
-          </div>
-        ))}
-      </dl>
-      {state.kind === "purchased" ? (
-        <p className="mt-4 text-sm text-stone">
-          Lesson-by-lesson progress is saved on the student&apos;s own device, so it isn&apos;t
-          shown here.
-        </p>
-      ) : null}
-      {enrolment.status !== "paid" ? (
-        <button type="button" className={`${adminButton.secondary} mt-5`} onClick={onMarkPaid}>
-          Mark as paid in the shop
-        </button>
       ) : null}
     </section>
   );

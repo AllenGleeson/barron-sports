@@ -1,29 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { markCourseCompleted } from "@/lib/course/account";
+import { useRef, useState } from "react";
+import { saveLessonStep, submitQuizAnswers } from "@/lib/course/account";
 import { formatRecordDate } from "@/lib/course/certificate";
 import { lessonBySlug, learnerCourse, type QuizGrade } from "@/lib/course/curriculum";
 import type { CourseEnrolment } from "@/lib/course/enrolment";
-import {
-  completedProgress,
-  isLessonUnlocked,
-  loadProgress,
-  saveProgress,
-  type LearnProgress,
-} from "@/lib/course/progress";
+import { isLessonUnlocked, type LearnProgress, type LessonProgress } from "@/lib/course/progress";
 import { Container } from "@/components/ui/Container";
 import { CompletionRecord } from "@/components/course/learn/CompletionRecord";
 import { Film, LessonStepper, Reading, type LessonStep } from "@/components/course/learn/LessonSteps";
 import { ModuleNav } from "@/components/course/learn/ModuleNav";
 import { QuizPanel } from "@/components/course/learn/QuizPanel";
 
-function firstOpenStep(lesson: LearnProgress["lessons"][string]): LessonStep {
+function firstOpenStep(lesson: LessonProgress): LessonStep {
   if (!lesson.read) return "read";
   if (!lesson.watched) return "watch";
   return "quiz";
 }
-
 
 function firstUnfinishedLesson(progress: LearnProgress) {
   return (
@@ -37,42 +30,27 @@ function firstUnfinishedLesson(progress: LearnProgress) {
 type LearnCourseProps = {
   learner: { name: string; email: string };
   enrolment: CourseEnrolment;
+  /** Progress loaded from the server by `EnrolmentGate`. */
+  initialProgress: LearnProgress;
+  /** Answers to prefill each quiz with while testing, or null. */
+  prefill: Record<string, Record<string, string>> | null;
 };
 
-/** Must render client-side only (it is shown by `EnrolmentGate`). */
-export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
-  // The server's completion date wins over this device's progress, so a finished
-  // course stays finished everywhere and can't be taken again.
-  const [completedAt, setCompletedAt] = useState(enrolment.completedAt);
-  const [progress, setProgress] = useState(() => {
-    const saved = loadProgress();
-    return enrolment.completedAt ? completedProgress(saved, enrolment.completedAt) : saved;
-  });
-  const [slug, setSlug] = useState(() => firstUnfinishedLesson(progress).slug);
+/**
+ * The lessons. Progress is saved on the server: reading and films are marked done
+ * straight away on screen and saved in the background; quizzes are graded by the server.
+ */
+export function LearnCourse({ learner, enrolment, initialProgress, prefill }: LearnCourseProps) {
+  const [progress, setProgress] = useState(initialProgress);
+  // The server's completion date; a finished course stays finished and can't be redone.
+  const [completedAt, setCompletedAt] = useState(enrolment.completedAt ?? initialProgress.completedAt);
+  const [slug, setSlug] = useState(() => firstUnfinishedLesson(initialProgress).slug);
   const [step, setStep] = useState<LessonStep>(() =>
-    firstOpenStep(progress.lessons[slug]),
+    firstOpenStep(initialProgress.lessons[firstUnfinishedLesson(initialProgress).slug]),
   );
-  const finished = Boolean(completedAt ?? progress.completedAt);
-
-  /** Records the finish on the server (once) and keeps its date. */
-  function reportFinished() {
-    void markCourseCompleted().then((date) => {
-      if (date) setCompletedAt(date);
-    });
-  }
-
-  // Progress finished on this device before the server knew about it.
-  useEffect(() => {
-    if (!enrolment.completedAt && loadProgress().completedAt) reportFinished();
-    // Only on first load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function commit(next: LearnProgress) {
-    const saved = saveProgress(completedAt ? completedProgress(next, completedAt) : next);
-    setProgress(saved);
-    if (saved.completedAt && !completedAt) reportFinished();
-  }
+  const [saveError, setSaveError] = useState("");
+  const saving = useRef<Promise<void>>(Promise.resolve());
+  const finished = Boolean(completedAt);
 
   const lesson = lessonBySlug(slug);
   const lessonProgress = progress.lessons[lesson.slug];
@@ -92,37 +70,34 @@ export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
     if (window.matchMedia("(max-width: 1023px)").matches) scrollToId("lesson-panel");
   }
 
-  function patchLesson(partial: Partial<LearnProgress["lessons"][string]>) {
-    commit({
-      ...progress,
+  /** Shows the step as done, then saves it. */
+  function markStep(stepName: "read" | "watched") {
+    const lessonSlug = lesson.slug;
+    if (lessonProgress[stepName]) return;
+    setProgress((current) => ({
+      ...current,
       lessons: {
-        ...progress.lessons,
-        [lesson.slug]: { ...progress.lessons[lesson.slug], ...partial },
+        ...current.lessons,
+        [lessonSlug]: { ...current.lessons[lessonSlug], [stepName]: true },
       },
-    });
+    }));
+    setSaveError("");
+    // Saved one after another, so "read" always reaches the server before "watched".
+    saving.current = saving.current.then(() =>
+      saveLessonStep(lessonSlug, stepName)
+        .then(setProgress)
+        .catch((error: Error) => setSaveError(error.message)),
+    );
   }
 
-  function onGraded(grade: QuizGrade, answers: Record<string, string>) {
-    const current = progress.lessons[lesson.slug];
-    const next: LearnProgress = {
-      ...progress,
-      lessons: {
-        ...progress.lessons,
-        [lesson.slug]: {
-          ...current,
-          attempts: current.attempts + 1,
-          scorePercent:
-            current.scorePercent === null
-              ? grade.scorePercent
-              : Math.max(current.scorePercent, grade.scorePercent),
-          passed: current.passed || grade.passed,
-          lastAnswers: answers,
-        },
-      },
-    };
-    commit(next);
+  async function submitQuiz(answers: Record<string, string>): Promise<QuizGrade> {
+    await saving.current;
+    const result = await submitQuizAnswers(lesson.slug, answers);
+    setProgress(result.progress);
+    if (result.completedAt) setCompletedAt(result.completedAt);
     // A pass swaps the quiz for the result screen, so bring the top of it into view.
-    if (grade.passed) scrollToId("lesson-panel");
+    if (result.grade.passed) scrollToId("lesson-panel");
+    return result.grade;
   }
 
   const nextLesson = learnerCourse.lessons[lessonIndex + 1];
@@ -133,8 +108,7 @@ export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
           if (nextLesson) {
             selectLesson(nextLesson.slug);
             scrollToId("lesson-panel");
-          }
-          else scrollToId("completion-record");
+          } else scrollToId("completion-record");
         },
       }
     : null;
@@ -151,15 +125,16 @@ export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
         ) : (
           <p className="text-sm text-stone">
             Take it at your own pace. Pass each quiz at {learnerCourse.passPercent}% to open the next
-            lesson.
+            lesson. Your progress is saved to your account, so you can carry on from any device.
           </p>
         )}
+        {saveError ? (
+          <p className="mt-3 border border-danger px-4 py-3 text-sm text-parchment" role="alert">
+            {saveError}
+          </p>
+        ) : null}
         <div className="mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
-          <ModuleNav
-            progress={progress}
-            activeSlug={slug}
-            onSelect={selectLesson}
-          />
+          <ModuleNav progress={progress} activeSlug={slug} onSelect={selectLesson} />
 
           <div id="lesson-panel" className="scroll-mt-28">
             <p className="text-[11px] uppercase tracking-[0.22em] text-brass">
@@ -175,7 +150,7 @@ export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
                 key={lesson.slug}
                 lesson={lesson}
                 onContinue={() => {
-                  patchLesson({ read: true });
+                  markStep("read");
                   setStep("watch");
                 }}
               />
@@ -185,7 +160,7 @@ export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
                 key={lesson.slug}
                 lesson={lesson}
                 watched={lessonProgress.watched}
-                onWatch={() => patchLesson({ watched: true })}
+                onWatch={() => markStep("watched")}
                 onContinue={() => setStep("quiz")}
               />
             ) : null}
@@ -194,15 +169,16 @@ export function LearnCourse({ learner, enrolment }: LearnCourseProps) {
                 key={lesson.slug}
                 lesson={lesson}
                 saved={lessonProgress}
+                prefill={prefill?.[lesson.slug] ?? null}
                 nextAction={nextAction}
-                onGraded={onGraded}
+                onSubmit={submitQuiz}
               />
             ) : null}
           </div>
         </div>
 
         <CompletionRecord
-          completedAt={completedAt ?? progress.completedAt}
+          completedAt={completedAt}
           learner={{ name: enrolment.certificateName ?? learner.name, email: learner.email }}
         />
       </Container>

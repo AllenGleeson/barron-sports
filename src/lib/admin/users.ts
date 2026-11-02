@@ -1,7 +1,32 @@
-import type { CourseEnrolment, CourseEnrolmentStatus } from "@/lib/course/enrolment";
+import type { CourseEnrolment, CourseEnrolmentStatus, CoursePayment } from "@/lib/course/enrolment";
+
+/** A student's progress through one lesson, from `course_progress`. */
+export type AdminLessonProgress = {
+  slug: string;
+  title: string;
+  read: boolean;
+  watched: boolean;
+  attempts: number;
+  bestScore: number | null;
+  passedAt: string | null;
+};
+
+export type AdminCourseProgress = {
+  passed: number;
+  total: number;
+  lessons: AdminLessonProgress[];
+};
+
+/** A payment on the admin Payments page: the payment plus who recorded it. */
+export type AdminPayment = CoursePayment & {
+  recordedByName: string | null;
+  /** False once the learner's account has been deleted. */
+  accountExists: boolean;
+};
 
 /**
- * Accounts on the admin Users page: Supabase Auth users plus their course enrolment.
+ * Accounts on the admin Users page: Supabase Auth users plus their course enrolment,
+ * payments and progress.
  * Loaded and changed through the admin-only routes in `src/app/api/admin/users/`.
  */
 
@@ -27,6 +52,9 @@ export type AdminUser = {
   phone: string | null;
   accountStatus: UserAccountStatus;
   enrolment: CourseEnrolment;
+  /** Every course payment for this account, newest first. */
+  payments: CoursePayment[];
+  progress: AdminCourseProgress;
   lastSignInAt: string | null;
   createdAt: string;
   /** The latest change to the account or its course enrolment. */
@@ -40,8 +68,13 @@ export type AdminUserChanges = {
   phone?: string | null;
   role?: UserRole;
   accountStatus?: UserAccountStatus;
-  /** Records a payment taken in the shop. */
-  markPaid?: boolean;
+  /**
+   * Records a payment taken in the shop, or free access, and opens the course. The
+   * record name is fixed from then on.
+   */
+  recordPayment?: { method: "in_shop" | "free"; amountCents: number; note: string };
+  /** Removes course access (with a reason) or gives it back. */
+  access?: { status: "active" | "revoked"; reason?: string };
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -61,16 +94,19 @@ export const ENROLMENT_STATUS_LABELS: Record<CourseEnrolmentStatus, string> = {
   registered: "Not paid",
   checkout_created: "Checkout started",
   paid: "Paid",
+  revoked: "Access removed",
 };
 
 export type CourseState =
   | { kind: "not-purchased" }
   | { kind: "purchased"; paidAt: string | null }
-  | { kind: "completed"; completedAt: string };
+  | { kind: "completed"; completedAt: string }
+  | { kind: "revoked"; revokedAt: string | null };
 
 /** Where a student is with the course, as far as the database knows. */
 export function courseState(user: AdminUser): CourseState {
   const { enrolment } = user;
+  if (enrolment.status === "revoked") return { kind: "revoked", revokedAt: enrolment.revokedAt };
   if (enrolment.completedAt) return { kind: "completed", completedAt: enrolment.completedAt };
   if (enrolment.status === "paid") return { kind: "purchased", paidAt: enrolment.paidAt };
   return { kind: "not-purchased" };
@@ -79,5 +115,6 @@ export function courseState(user: AdminUser): CourseState {
 export function courseStateLabel(state: CourseState) {
   if (state.kind === "completed") return "Completed";
   if (state.kind === "purchased") return "In progress";
+  if (state.kind === "revoked") return "Access removed";
   return "Not purchased";
 }

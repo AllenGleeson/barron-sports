@@ -210,8 +210,9 @@ export function AdminToolbar({
   count: number;
   /** All rows on the page, when different from `count`. */
   total?: number;
-  addLabel: string;
-  onAdd: () => void;
+  /** The Add button; leave both out for a list with nothing to add. */
+  addLabel?: string;
+  onAdd?: () => void;
   search: string;
   onSearch: (value: string) => void;
   searchPlaceholder?: string;
@@ -236,13 +237,15 @@ export function AdminToolbar({
             {total !== undefined && total !== count ? `${count} of ${total}` : count} shown
           </p>
         </div>
-        <button
-          type="button"
-          className={`${buttonClass({ size: "compact" })} shrink-0`}
-          onClick={onAdd}
-        >
-          + {addLabel}
-        </button>
+        {addLabel && onAdd ? (
+          <button
+            type="button"
+            className={`${buttonClass({ size: "compact" })} shrink-0`}
+            onClick={onAdd}
+          >
+            + {addLabel}
+          </button>
+        ) : null}
       </div>
 
       {tabs ? <div className="mt-4">{tabs}</div> : null}
@@ -258,7 +261,7 @@ export function AdminToolbar({
           className="!mt-0 w-full sm:w-72"
         />
         <FiltersMenu filters={filters} onReset={onResetFilters} />
-        <ActionsMenu actions={actions} selectedCount={selectedCount} />
+        {actions.length > 0 ? <ActionsMenu actions={actions} selectedCount={selectedCount} /> : null}
         {selectedCount > 0 ? (
           <span className="inline-flex items-center gap-2 border border-brass/50 px-3 py-2 text-xs text-brass">
             {selectedCount} selected

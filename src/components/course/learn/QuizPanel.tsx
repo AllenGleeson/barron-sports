@@ -1,8 +1,7 @@
 import { useState } from "react";
 import {
-  gradeQuiz,
+  gradeFromResults,
   requiredCorrectCount,
-  startingAnswers,
   type CourseLesson,
   type QuizGrade,
 } from "@/lib/course/curriculum";
@@ -13,23 +12,29 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 type QuizPanelProps = {
   lesson: CourseLesson;
   saved: LessonProgress;
+  /** Answers to start with while testing, or null. */
+  prefill: Record<string, string> | null;
   nextAction: { label: string; onClick: () => void } | null;
-  onGraded: (grade: QuizGrade, answers: Record<string, string>) => void;
+  /** Sends the answers to the server, which grades and saves them. */
+  onSubmit: (answers: Record<string, string>) => Promise<QuizGrade>;
 };
 
-export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProps) {
+export function QuizPanel({ lesson, saved, prefill, nextAction, onSubmit }: QuizPanelProps) {
   const [answers, setAnswers] = useState<Record<string, string>>(
-    () => saved.lastAnswers ?? startingAnswers(lesson.quiz),
+    () => saved.lastAnswers ?? prefill ?? {},
   );
-  const [submitted, setSubmitted] = useState(Boolean(saved.lastAnswers) || saved.passed);
+  const [grade, setGrade] = useState<QuizGrade | null>(() =>
+    saved.lastResults ? gradeFromResults(lesson.quiz, saved.lastResults) : null,
+  );
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // After a pass, the result screen shows first; "Review questions" opens the marked quiz.
   const [reviewing, setReviewing] = useState(false);
-  const grade = submitted ? gradeQuiz(lesson.quiz, answers) : null;
+  const submitted = Boolean(grade);
   const needed = requiredCorrectCount(lesson.quiz.questions.length, lesson.quiz.passPercent);
 
-  // Older saved passes may have no answers to review, only a score.
-  const passedWithoutAnswers = saved.passed && !saved.lastAnswers;
+  // A pass recorded without answers (e.g. marked complete by the shop) has only a score.
+  const passedWithoutAnswers = saved.passed && !grade;
   if (passedWithoutAnswers || (grade?.passed && !reviewing)) {
     return (
       <QuizResult
@@ -43,23 +48,29 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
     );
   }
 
-  function submit(event: React.FormEvent) {
+  async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (busy) return;
     const missing = lesson.quiz.questions.some((question) => !answers[question.id]);
     if (missing) {
       setError("Answer every question before you submit.");
       return;
     }
     setError("");
-    setSubmitted(true);
-    onGraded(gradeQuiz(lesson.quiz, answers), answers);
+    setBusy(true);
+    try {
+      setGrade(await onSubmit(answers));
+    } catch (failure) {
+      setError((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <form className="mt-6 border border-line bg-moss px-5 py-6 sm:px-8" onSubmit={submit}>
       <p className="text-sm leading-relaxed text-parchment">
-        Pass mark {lesson.quiz.passPercent}% ({needed} of {lesson.quiz.questions.length}). This
-        preview checks the answers in the browser.
+        Pass mark {lesson.quiz.passPercent}% ({needed} of {lesson.quiz.questions.length}).
       </p>
       {saved.attempts > 0 ? (
         <p className="mt-2 text-xs uppercase tracking-[0.16em] text-stone">
@@ -72,7 +83,7 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
         {lesson.quiz.questions.map((question, index) => {
           const result = grade?.results.find((item) => item.id === question.id);
           const correctOption = question.options.find(
-            (option) => option.id === question.correctOptionId,
+            (option) => option.id === result?.correctOptionId,
           );
 
           return (
@@ -85,7 +96,7 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
                 <div className="mt-3 grid gap-2">
                   {question.options.map((option) => {
                     const chosen = (result?.chosenId ?? answers[question.id]) === option.id;
-                    const showCorrect = Boolean(result) && option.id === question.correctOptionId;
+                    const showCorrect = Boolean(result) && option.id === result?.correctOptionId;
                     const showWrong = Boolean(result) && chosen && !result?.isCorrect;
                     return (
                       <label
@@ -105,7 +116,7 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
                           name={question.id}
                           value={option.id}
                           checked={answers[question.id] === option.id}
-                          disabled={submitted}
+                          disabled={submitted || busy}
                           onChange={() => {
                             setAnswers((current) => ({ ...current, [question.id]: option.id }));
                             setError("");
@@ -120,7 +131,7 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
                 {result ? (
                   <p className="mt-3 text-sm leading-relaxed text-stone">
                     {result.isCorrect ? "Correct. " : `Correct answer: ${correctOption?.label}. `}
-                    {question.explanation}
+                    {result.explanation}
                   </p>
                 ) : null}
               </fieldset>
@@ -144,12 +155,16 @@ export function QuizPanel({ lesson, saved, nextAction, onGraded }: QuizPanelProp
       ) : null}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        {!submitted ? <ActionButton type="submit">Submit quiz</ActionButton> : null}
+        {!submitted ? (
+          <ActionButton type="submit" disabled={busy}>
+            {busy ? "Marking…" : "Submit quiz"}
+          </ActionButton>
+        ) : null}
         {submitted && !grade?.passed ? (
           <ActionButton
             onClick={() => {
-              setAnswers(startingAnswers(lesson.quiz));
-              setSubmitted(false);
+              setAnswers(prefill ?? {});
+              setGrade(null);
               setError("");
             }}
           >

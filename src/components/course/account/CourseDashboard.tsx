@@ -14,13 +14,14 @@ import {
   signOutLearner,
   updateLearnerName,
   useCourseEnrolment,
+  useCourseProgress,
   type EnrolmentState,
   type Learner,
 } from "@/lib/course/account";
 import { formatRecordDate } from "@/lib/course/certificate";
 import { learnerCourse } from "@/lib/course/curriculum";
-import { courseEnrolmentOffer, isPaid } from "@/lib/course/enrolment";
-import { loadProgress } from "@/lib/course/progress";
+import { courseEnrolmentOffer, hasAccess } from "@/lib/course/enrolment";
+import { passedLessonCount } from "@/lib/course/progress";
 import { site } from "@/lib/site";
 
 const card = "border border-line bg-moss px-5 py-6 sm:px-8";
@@ -50,10 +51,10 @@ function Dashboard({ learner }: { learner: Learner }) {
 function CourseCard({ learner, state }: { learner: Learner; state: EnrolmentState }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
-  // Only rendered after sign-in is known, so the browser's saved progress can be read here.
-  const [progress] = useState(loadProgress);
+  const allowed = !state.loading && hasAccess(state.enrolment);
+  const progress = useCourseProgress(allowed);
   const total = learnerCourse.lessons.length;
-  const passed = learnerCourse.lessons.filter((lesson) => progress.lessons[lesson.slug]?.passed).length;
+  const passed = progress.status === "ready" ? passedLessonCount(progress.progress) : 0;
   const name = learner.name.trim();
 
   return (
@@ -71,13 +72,21 @@ function CourseCard({ learner, state }: { learner: Learner; state: EnrolmentStat
         <p className="mt-6 text-sm text-stone" role="status">
           Checking your enrolment…
         </p>
-      ) : isPaid(state.enrolment) ? (
+      ) : allowed ? (
         <PaidCourse
           paidAt={state.enrolment.paidAt}
-          completedAt={state.enrolment.completedAt ?? progress.completedAt}
+          completedAt={state.enrolment.completedAt}
           passed={passed}
           total={total}
         />
+      ) : state.enrolment.status === "revoked" ? (
+        <div className="mt-6">
+          <p className="text-sm text-parchment">
+            Your access to the course has been removed
+            {state.enrolment.revokeReason ? ` (${state.enrolment.revokeReason.toLowerCase()})` : ""}.
+            If you think this is a mistake, contact the shop on {site.phone.display}.
+          </p>
+        </div>
       ) : (
         <div className="mt-6">
           <p className="font-display text-4xl text-cream">{courseEnrolmentOffer.priceDisplay}</p>
@@ -186,7 +195,7 @@ function NameRow({ learner, state }: { learner: Learner; state: EnrolmentState }
   const [busy, setBusy] = useState(false);
 
   // After payment the record's name is fixed; the server keeps its own copy of it.
-  if (!state.loading && isPaid(state.enrolment)) {
+  if (!state.loading && (state.enrolment.status === "paid" || state.enrolment.status === "revoked")) {
     return (
       <div className="mt-5">
         <p className={fieldLabelClass}>Name on your record</p>

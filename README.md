@@ -50,8 +50,9 @@ After that:
 
 - Site content (products, offers, brands, services, course guides) lives in `src/lib/site.ts` and `src/lib/content/`. Changing it and pushing to `main` updates the live site.
 - `/admin` requires signing in with a Supabase account that has the admin role (see below). It saves to the Supabase database: special offers, packages and services update on the live site straight away. Other catalogue pages still come from the site files.
-- The online course: learners register at `/course/register` (Supabase Auth), buy the course from `/course/dashboard` with Stripe Checkout, then take the lessons at `/course/learn`. Lesson progress still saves only on the learner's device. See **Course payments (Stripe)** below.
-- `/admin/users` lists the real accounts (students and admins) with their course payment and completion. Admins can edit, disable, delete, invite and send password reset emails there.
+- The online course: learners register at `/course/register` (Supabase Auth), buy the course from `/course/dashboard` with Stripe Checkout, then take the lessons at `/course/learn`. Progress is saved to their account and quizzes are marked on the server. See **Course payments (Stripe)** below.
+- `/admin/users` lists the real accounts (students and admins) with their course access, payments and lesson progress. Admins can edit, disable, delete, invite and send password reset emails there, record a payment taken in the shop or give free access, and remove or restore course access.
+- `/admin/payments` lists every course payment (online, in the shop, free) with totals by month and a CSV export.
 
 ## Database setup
 
@@ -64,7 +65,7 @@ The database tables and access rules are in [supabase/migrations/](supabase/migr
 
 The course is sold with Stripe Checkout, embedded on `/course/checkout`. Until the keys below are set, the site shows "Payments aren't set up yet".
 
-1. Run the `course_enrolments` migration in the Supabase SQL Editor (see **Database setup**).
+1. Run the course migrations (`course_enrolments`, `course_enrolment_lock`, `course_payments_progress`) in the Supabase SQL Editor (see **Database setup**).
 2. In Supabase, **Authentication → Sign In / Providers → Email**: turn **Confirm email** off for now. Supabase's built-in mail sender only allows a few emails an hour; turn confirmation back on once a proper email service is set up.
 3. In the Stripe dashboard, switch to **Test mode** and copy the keys from **Developers → API keys** into `.env.local`:
 
@@ -76,10 +77,12 @@ The course is sold with Stripe Checkout, embedded on `/course/checkout`. Until t
 
 4. Webhook (backs up the return page if a learner closes the tab after paying):
    - Locally: install the [Stripe CLI](https://docs.stripe.com/stripe-cli), run `stripe listen --forward-to localhost:3000/api/stripe/webhook/`, and put the `whsec_...` it prints in `.env.local` as `STRIPE_WEBHOOK_SECRET`.
-   - On Vercel: in Stripe, **Developers → Webhooks → Add endpoint**, URL `https://<your-domain>/api/stripe/webhook/` (keep the trailing slash), events `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Use its signing secret as `STRIPE_WEBHOOK_SECRET`.
+   - On Vercel: in Stripe, **Developers → Webhooks → Add endpoint**, URL `https://<your-domain>/api/stripe/webhook/` (keep the trailing slash), events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired` and `charge.refunded`. Use its signing secret as `STRIPE_WEBHOOK_SECRET`.
 5. Add the same variables in Vercel (**Project → Settings → Environment Variables**) and redeploy.
 
 Test cards: `4242 4242 4242 4242`, any future date, any CVC. `4000 0025 0000 3155` asks for 3-D Secure; `4000 0000 0000 9995` is declined. Switching to live payments means swapping in the live keys and a live webhook.
+
+**Refunds:** refund online payments in the Stripe dashboard (**Payments → ⋯ → Refund**). The webhook marks the payment refunded on `/admin/payments` and, for a full refund, removes the learner's course access. Payments taken in the shop are marked refunded from the student's page in **Admin → Users**.
 
 ## Admin accounts
 

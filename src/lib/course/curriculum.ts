@@ -6,7 +6,10 @@ export const COURSE_PASS_PERCENT = 80;
  */
 export const COURSE_UNLOCK_ALL = true;
 
-/** Testing switch: quizzes open with the correct answers already ticked. Set to false before launch. */
+/**
+ * Testing switch: quizzes open with the correct answers already ticked (the server sends
+ * them with the learner's progress). Set to false before launch.
+ */
 export const COURSE_PREFILL_ANSWERS = true;
 
 export type QuizOption = {
@@ -14,12 +17,14 @@ export type QuizOption = {
   label: string;
 };
 
+/**
+ * A quiz question as the browser sees it. The correct answer and explanation are in
+ * `quizAnswers.ts` (server only), and grading happens on the server.
+ */
 export type QuizQuestion = {
   id: string;
   prompt: string;
   options: QuizOption[];
-  correctOptionId: string;
-  explanation: string;
 };
 
 export type CourseLesson = {
@@ -88,8 +93,6 @@ export const learnerCourse = {
               { id: "trigger", label: "Pull the trigger to check" },
               { id: "closed", label: "Assume it is empty if the action is closed" },
             ],
-            correctOptionId: "check",
-            explanation: "Every gun is loaded until you have checked it yourself.",
           },
           {
             id: "handover",
@@ -100,8 +103,6 @@ export const learnerCourse = {
               { id: "safety", label: "Closed, with the safety on" },
               { id: "muzzle", label: "Muzzle first, so they can see down the barrel" },
             ],
-            correctOptionId: "open",
-            explanation: "Keep the gun open whenever you can, and always when handing it over.",
           },
           {
             id: "loading",
@@ -112,8 +113,6 @@ export const learnerCourse = {
               { id: "range", label: "It only matters on a range" },
               { id: "none", label: "It doesn't matter while loading" },
             ],
-            correctOptionId: "risk",
-            explanation: "An accidental discharge is most likely while loading, so point the muzzle somewhere safe.",
           },
           {
             id: "safety",
@@ -124,8 +123,6 @@ export const learnerCourse = {
               { id: "rely", label: "Keep it on until you intend to shoot, but don't rely on it" },
               { id: "trigger", label: "You can rest your finger on the trigger" },
             ],
-            correctOptionId: "rely",
-            explanation: "A safety can fail. Muzzle direction and trigger discipline still apply.",
           },
           {
             id: "alcohol",
@@ -136,8 +133,6 @@ export const learnerCourse = {
               { id: "driver", label: "Yes, if someone else drives" },
               { id: "range", label: "Yes, but only on a range" },
             ],
-            correctOptionId: "no",
-            explanation: "Alcohol and drugs have no place around firearms.",
           },
         ],
       },
@@ -176,8 +171,6 @@ export const learnerCourse = {
               { id: "clean", label: "Only after cleaning" },
               { id: "never", label: "Never. The first shot clears it" },
             ],
-            correctOptionId: "before",
-            explanation: "An obstruction in the barrel can burst it. Check before loading.",
           },
           {
             id: "mixed",
@@ -188,8 +181,6 @@ export const learnerCourse = {
               { id: "correct", label: "Use the correct ammunition for the gun, and never carry mixed ammunition" },
               { id: "pocket", label: "Keep spare cartridges loose in any pocket" },
             ],
-            correctOptionId: "correct",
-            explanation: "Mixed ammunition makes it easy to load the wrong cartridge.",
           },
           {
             id: "steel",
@@ -200,8 +191,6 @@ export const learnerCourse = {
               { id: "full", label: "Only with full choke" },
               { id: "old", label: "Only in older guns" },
             ],
-            correctOptionId: "proof",
-            explanation: "If you are unsure whether your gun is suitable, have it inspected before use.",
           },
           {
             id: "misfire",
@@ -212,8 +201,6 @@ export const learnerCourse = {
               { id: "hold", label: "Hold your position for 20 seconds, then unload with the muzzle and breech pointed in a safe direction" },
               { id: "barrel", label: "Look down the barrel to see what went wrong" },
             ],
-            correctOptionId: "hold",
-            explanation: "A cartridge can fire late. Wait 20 seconds before you unload.",
           },
           {
             id: "dull",
@@ -224,8 +211,6 @@ export const learnerCourse = {
               { id: "louder", label: "Fire again to clear it" },
               { id: "ignore", label: "Ignore it. It is just the weather" },
             ],
-            correctOptionId: "check",
-            explanation: "A dull blast can mean the shot or wad is still in the barrel.",
           },
         ],
       },
@@ -266,8 +251,6 @@ export const learnerCourse = {
               { id: "case", label: "In its case under the bed" },
               { id: "none", label: "Nothing, for a single gun" },
             ],
-            correctOptionId: "lock",
-            explanation: "One shotgun needs a trigger lock and must be stored broken down.",
           },
           {
             id: "four",
@@ -278,8 +261,6 @@ export const learnerCourse = {
               { id: "alarm", label: "A safe and an alarm" },
               { id: "room", label: "A locked room" },
             ],
-            correctOptionId: "alarm",
-            explanation: "Two guns need a safe, four need a safe and an alarm, and six need a monitored alarm too.",
           },
           {
             id: "ammo",
@@ -290,8 +271,6 @@ export const learnerCourse = {
               { id: "glovebox", label: "In an unlocked glovebox" },
               { id: "chamber", label: "In the chamber, ready to go" },
             ],
-            correctOptionId: "locked",
-            explanation: "Ammunition is locked away and kept apart from the firearms, in storage and in transit.",
           },
           {
             id: "silencer",
@@ -302,8 +281,6 @@ export const learnerCourse = {
               { id: "rifle", label: "Only if you own a rifle" },
               { id: "shop", label: "Only if bought outside Ireland" },
             ],
-            correctOptionId: "yes",
-            explanation: "Silencers and night-vision scopes are treated as firearms.",
           },
           {
             id: "authority",
@@ -314,8 +291,6 @@ export const learnerCourse = {
               { id: "super", label: "The district Superintendent" },
               { id: "club", label: "Your gun club" },
             ],
-            correctOptionId: "super",
-            explanation: "The district Superintendent grants the licence and can attach conditions to it.",
           },
         ],
       },
@@ -356,8 +331,6 @@ export const learnerCourse = {
               { id: "200", label: "Over 200 metres" },
               { id: "field", label: "No further than the end of the field" },
             ],
-            correctOptionId: "200",
-            explanation: "Bird shot can travel over 200 metres, so know what is well beyond your target.",
           },
           {
             id: "backstop",
@@ -368,8 +341,6 @@ export const learnerCourse = {
               { id: "bank", label: "A solid earth bank behind the target" },
               { id: "yard", label: "A concrete yard" },
             ],
-            correctOptionId: "bank",
-            explanation: "Water and flat, hard surfaces can make a rifle bullet ricochet.",
           },
           {
             id: "scope",
@@ -380,8 +351,6 @@ export const learnerCourse = {
               { id: "safe", label: "Yes, if the safety is on" },
               { id: "unloaded", label: "Yes, if you think it is unloaded" },
             ],
-            correctOptionId: "no",
-            explanation: "Looking through the scope means pointing the rifle at whatever you are looking at.",
           },
           {
             id: "obstacle",
@@ -392,8 +361,6 @@ export const learnerCourse = {
               { id: "carry", label: "Carry it loaded, muzzle up" },
               { id: "throw", label: "Pass it over loaded to a friend" },
             ],
-            correctOptionId: "unload",
-            explanation: "Always unload before crossing an obstacle.",
           },
           {
             id: "group",
@@ -404,8 +371,6 @@ export const learnerCourse = {
               { id: "nothing", label: "Nothing. Everyone watches out for themselves" },
               { id: "bag", label: "How the bag will be shared" },
             ],
-            correctOptionId: "officer",
-            explanation: "Pick a Safety Officer, set zones of fire, and know where everyone is at all times.",
           },
         ],
       },
@@ -445,8 +410,6 @@ export const learnerCourse = {
               { id: "minor", label: "A minor matter, if nobody complains" },
               { id: "season", label: "Allowed during the open season" },
             ],
-            correctOptionId: "trespass",
-            explanation: "Without the landowner's permission, it is armed trespass.",
           },
           {
             id: "conflict",
@@ -457,8 +420,6 @@ export const learnerCourse = {
               { id: "ignore", label: "Ignore them and keep shooting" },
               { id: "show", label: "Show them your gun and certificate" },
             ],
-            correctOptionId: "avoid",
-            explanation: "Walk away from confrontations and keep a record of any conflict.",
           },
           {
             id: "vehicle",
@@ -469,8 +430,6 @@ export const learnerCourse = {
               { id: "no", label: "No. Hunting from a vehicle and shooting from a public road are both illegal" },
               { id: "night", label: "Yes, but only at night" },
             ],
-            correctOptionId: "no",
-            explanation: "Both are illegal.",
           },
           {
             id: "foreshore",
@@ -481,8 +440,6 @@ export const learnerCourse = {
               { id: "farm", label: "On any farmland" },
               { id: "range", label: "On a shooting range" },
             ],
-            correctOptionId: "tidal",
-            explanation: "Tidal areas and larger lakes need a foreshore licence.",
           },
           {
             id: "doubt",
@@ -493,8 +450,6 @@ export const learnerCourse = {
               { id: "dont", label: "Don't shoot" },
               { id: "ask", label: "Shoot if your companion thinks it is fine" },
             ],
-            correctOptionId: "dont",
-            explanation: "When in doubt, don't shoot. And never shoot birds with a rifle.",
           },
         ],
       },
@@ -502,45 +457,39 @@ export const learnerCourse = {
   ] satisfies CourseLesson[],
 };
 
+/** One marked question, as returned by the server after grading. */
+export type QuizResult = {
+  id: string;
+  chosenId: string | null;
+  isCorrect: boolean;
+  correctOptionId: string;
+  explanation: string;
+};
+
 export type QuizGrade = {
   correct: number;
   total: number;
   scorePercent: number;
   passed: boolean;
-  results: { id: string; chosenId: string | null; isCorrect: boolean }[];
+  results: QuizResult[];
 };
 
 export function requiredCorrectCount(questionCount: number, passPercent: number) {
   return Math.ceil((questionCount * passPercent) / 100);
 }
 
-/** Starting answers for a quiz: the correct ones while testing, otherwise none. */
-export function startingAnswers(quiz: CourseLesson["quiz"]): Record<string, string> {
-  if (!COURSE_PREFILL_ANSWERS) return {};
-  return Object.fromEntries(quiz.questions.map((question) => [question.id, question.correctOptionId]));
+/** Rebuilds a grade from marked results (e.g. the last attempt loaded from the server). */
+export function gradeFromResults(quiz: CourseLesson["quiz"], results: QuizResult[]): QuizGrade {
+  const correct = results.filter((result) => result.isCorrect).length;
+  const total = quiz.questions.length;
+  const scorePercent = Math.round((correct / total) * 100);
+  return { correct, total, scorePercent, passed: scorePercent >= quiz.passPercent, results };
 }
 
-export function gradeQuiz(
-  quiz: CourseLesson["quiz"],
-  answers: Record<string, string>,
-): QuizGrade {
-  let correct = 0;
-  const results = quiz.questions.map((question) => {
-    const chosenId = answers[question.id] ?? null;
-    const isCorrect = chosenId === question.correctOptionId;
-    if (isCorrect) correct += 1;
-    return { id: question.id, chosenId, isCorrect };
-  });
-  const scorePercent = Math.round((correct / quiz.questions.length) * 100);
-  return {
-    correct,
-    total: quiz.questions.length,
-    scorePercent,
-    passed: scorePercent >= quiz.passPercent,
-    results,
-  };
+export function findLesson(slug: string) {
+  return learnerCourse.lessons.find((lesson) => lesson.slug === slug) ?? null;
 }
 
 export function lessonBySlug(slug: string) {
-  return learnerCourse.lessons.find((lesson) => lesson.slug === slug) ?? learnerCourse.lessons[0];
+  return findLesson(slug) ?? learnerCourse.lessons[0];
 }
