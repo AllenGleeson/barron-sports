@@ -31,6 +31,7 @@ import {
   useTableSort,
   type AdminTableHeader,
 } from "@/components/admin/list";
+import { AdminPagination, usePagination } from "@/components/admin/pagination";
 import { AdminToolbar, type ActionDef, type FilterDef } from "@/components/admin/toolbar";
 import type { AdminBrand } from "@/lib/admin/models";
 import { slugify } from "@/lib/admin/slug";
@@ -102,6 +103,12 @@ export function BrandsAdmin() {
     search,
     sort,
   ]);
+
+  // Any change to what's listed or its order goes back to page 1.
+  const pagination = usePagination(
+    rows,
+    JSON.stringify([search, sort, publishedFilter, dateAddedFilter, lastUpdatedFilter]),
+  );
 
   const selection = useRowSelection(rows);
 
@@ -370,8 +377,12 @@ export function BrandsAdmin() {
         onClearSelection={selection.clear}
       />
       <AdminTable headers={tableHeaders} sort={sort} onSort={toggleSort}>
-        <SelectAllRow selection={selection} colSpan={5} />
-        {rows.map((row) => (
+        <SelectAllRow
+          selection={selection}
+          colSpan={5}
+          pageIds={pagination.pageRows.map((row) => row.id)}
+        />
+        {pagination.pageRows.map((row) => (
           <tr key={row.id}>
             <SelectRowCell selection={selection} id={row.id} label={row.name} />
             <td className="px-2.5 py-2.5 sm:px-3 lg:px-4 lg:py-3">
@@ -417,6 +428,7 @@ export function BrandsAdmin() {
           </tr>
         ))}
       </AdminTable>
+      <AdminPagination pagination={pagination} label="Brand pages" />
       {bulk.modal}
     </div>
   );

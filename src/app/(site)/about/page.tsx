@@ -3,7 +3,7 @@ import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
-import { pageImages, site } from "@/lib/site";
+import { pageImages, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "About",
@@ -47,7 +47,11 @@ export default function AboutPage() {
               not call in unannounced.
             </p>
             <div className="mt-8">
-              <Button href="/contact-us">Contact Us</Button>
+              {SHOW_CONTACT_PAGE ? (
+                <Button href="/contact-us">Contact Us</Button>
+              ) : (
+                <Button href={site.phone.href}>Call {site.phone.display}</Button>
+              )}
             </div>
           </div>
           <div className="relative min-h-[22rem] overflow-hidden">

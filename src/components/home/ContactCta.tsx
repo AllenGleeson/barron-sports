@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
-import { pageImages, site } from "@/lib/site";
+import { pageImages, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export function ContactCta() {
@@ -29,7 +29,7 @@ export function ContactCta() {
           would rather talk it through than sell you the wrong thing.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button href="/contact-us">Contact Us</Button>
+          {SHOW_CONTACT_PAGE ? <Button href="/contact-us">Contact Us</Button> : null}
           <Button href={site.phone.href} variant="secondary">
             Get in Touch
           </Button>

@@ -8,6 +8,7 @@ import { categories } from "@/lib/content/categories";
 export * from "@/lib/content/categories";
 export * from "@/lib/content/offers";
 export * from "@/lib/content/brands";
+export * from "@/lib/content/brandStock";
 export * from "@/lib/content/course";
 export * from "@/lib/content/products";
 export * from "@/lib/content/catalogues";
@@ -28,11 +29,11 @@ export const site = {
     href: "tel:+353877441042",
   },
   email: {
-    display: "Gbarron@hotmail.com",
-    href: "mailto:Gbarron@hotmail.com",
+    display: "gbarron@hotmail.com",
+    href: "mailto:gbarron@hotmail.com",
   },
   hours: [
-    { day: "Monday – Friday", time: "10:00 – 19:00" },
+    { day: "Monday – Friday", time: "10:00 – 18:30" },
     { day: "Saturday", time: "10:00 – 12:30" },
     { day: "Sunday", time: "Closed" },
   ],
@@ -71,14 +72,28 @@ export const pageImages = {
   },
 } as const;
 
+/**
+ * Shows the firearms safety course in the nav, footer and home page.
+ * The course pages still exist at /course when this is false.
+ */
+export const SHOW_COURSE = false;
+
+const COURSE_NAV_ITEM = { label: "Course", href: "/course" };
+
+/**
+ * Shows the contact page in the nav and the "Contact" / "Ask about…" buttons.
+ * Off until the contact form can send email; the page still exists at /contact-us.
+ */
+export const SHOW_CONTACT_PAGE = false;
+
 export const footerNav = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
   { label: "Special Offers", href: "/special-offers" },
   { label: "Brands", href: "/brands" },
-  { label: "Course", href: "/course" },
+  ...(SHOW_COURSE ? [COURSE_NAV_ITEM] : []),
   { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact-us" },
+  ...(SHOW_CONTACT_PAGE ? [{ label: "Contact", href: "/contact-us" }] : []),
 ];
 
 export type NavItem = {
@@ -101,10 +116,9 @@ export const primaryNav: NavItem[] = [
   },
   { label: "Special Offers", href: "/special-offers", prominent: true },
   { label: "Brands", href: "/brands" },
-  { label: "Course", href: "/course" },
+  ...(SHOW_COURSE ? [COURSE_NAV_ITEM] : []),
   { label: "About", href: "/about" },
-  { label: "Contact Us", href: "/contact-us" },
-  { label: "Admin", href: "/admin" },
+  ...(SHOW_CONTACT_PAGE ? [{ label: "Contact Us", href: "/contact-us" }] : []),
 ];
 
 export type Service = {

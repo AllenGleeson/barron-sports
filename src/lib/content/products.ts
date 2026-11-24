@@ -19,12 +19,11 @@ export const PRODUCT_PLACEHOLDER_IMAGE = "/products/product-placeholder.jpg";
 export const categoryProducts: Record<string, Product[]> = {
   accessories: [
     {
-      name: "Vortex sights",
-      brands: ["Vortex"],
+      name: "Sights and optics",
       href: "/products/accessories#sights",
       image:
         "/catalogues/accessories/sights.webp",
-      summary: "Full line of Vortex sights at competitive prices.",
+      summary: "Riflescopes and optics for hunting and target shooting, at competitive prices.",
     },
     {
       name: "Champion Clay Trap - Workhorse",

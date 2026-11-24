@@ -186,3 +186,20 @@ export function brandLogoFor(name?: string) {
     return brandName.includes(needle) || needle.includes(brandName);
   });
 }
+
+/**
+ * Splits the brand list into brands with a product or offer on the site
+ * ("in stock") and the rest ("available on request"), keeping list order.
+ * Names are matched loosely through `brandLogoFor` ("Beretta" → the full name).
+ */
+export function splitBrandsByStock(names: Iterable<string>) {
+  const stocked = new Set<string>();
+  for (const name of names) {
+    const brand = brandLogoFor(name);
+    if (brand) stocked.add(brand.name);
+  }
+  const inStock: Brand[] = [];
+  const onRequest: Brand[] = [];
+  for (const brand of brands) (stocked.has(brand.name) ? inStock : onRequest).push(brand);
+  return { inStock, onRequest };
+}

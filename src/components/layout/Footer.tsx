@@ -57,16 +57,8 @@ export function Footer() {
             Contact
           </h2>
           <address className="mt-5 space-y-3 text-sm not-italic leading-relaxed text-parchment">
-            <p>
-              <a href={site.phone.href} className="hover:text-brass">
-                {site.phone.display}
-              </a>
-            </p>
-            <p>
-              <a href={site.email.href} className="hover:text-brass">
-                {site.email.display}
-              </a>
-            </p>
+            <p>{site.phone.display}</p>
+            <p>{site.email.display}</p>
             <p>
               {site.address.lines.join(", ")}
               <br />

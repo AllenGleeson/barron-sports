@@ -36,7 +36,7 @@ export const categories: Category[] = (
       menuDescription: "Sights, mounts, traps and field equipment",
       shortDescription: "Sights, mounts, clay traps and field essentials.",
       description:
-        "From Vortex sights and scope rings to Champion clay traps, moderators and aftermarket stocks. Practical equipment chosen for Irish hunting and clay shooting.",
+        "From riflescopes and scope rings to Champion clay traps, moderators and aftermarket stocks. Practical equipment chosen for Irish hunting and clay shooting.",
       image: {
         src: "/categories/category-accessories.jpg",
         alt: "Hunting accessories including a cartridge belt, binoculars and scope rings",

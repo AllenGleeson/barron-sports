@@ -14,6 +14,7 @@ import {
   getCategory,
   isFirearmCategory,
   MIN_PRODUCTS_FOR_SEARCH,
+  SHOW_CONTACT_PAGE,
   site,
 } from "@/lib/site";
 
@@ -91,7 +92,7 @@ export default async function CategoryPage({ params }: PageProps) {
             </p>
           )}
           <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-            <Button href="/contact-us">Ask about availability</Button>
+            {SHOW_CONTACT_PAGE ? <Button href="/contact-us">Ask about availability</Button> : null}
             <Button href={site.phone.href} variant="secondary">
               Call {site.phone.display}
             </Button>

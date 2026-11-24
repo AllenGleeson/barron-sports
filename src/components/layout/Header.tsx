@@ -141,7 +141,7 @@ export function Header() {
             <a href={site.phone.href} className="hover:text-brass">
               {site.phone.display}
             </a>
-            <span>Mon–Fri 10:00–19:00 · Sat 10:00–12:30</span>
+            <span>Mon–Fri 10:00–18:30 · Sat 10:00–12:30</span>
             <span>Please call before visiting</span>
           </p>
         </Container>

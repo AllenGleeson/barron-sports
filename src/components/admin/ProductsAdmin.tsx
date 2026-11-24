@@ -27,6 +27,7 @@ import {
   type AdminTableHeader,
   type SortDirection,
 } from "@/components/admin/list";
+import { AdminPagination, usePagination } from "@/components/admin/pagination";
 import { emptyProduct, ProductForm } from "@/components/admin/ProductForm";
 import {
   DISCOUNT_OPTIONS,
@@ -243,6 +244,24 @@ export function ProductsAdmin() {
     sort,
     typeFilter,
   ]);
+
+  // Any change to what's listed or its order goes back to page 1.
+  const pagination = usePagination(
+    rows,
+    JSON.stringify([
+      view,
+      search,
+      sort,
+      typeFilter,
+      offerFilter,
+      categoryFilter,
+      priceFilter,
+      discountFilter,
+      publishedFilter,
+      dateAddedFilter,
+      lastUpdatedFilter,
+    ]),
+  );
 
   const selection = useRowSelection(rows);
   const selectedRows = data.products.filter((row) => selection.isSelected(row.id));
@@ -521,8 +540,12 @@ export function ProductsAdmin() {
       />
 
       <AdminTable headers={tableHeaders} sort={sort} onSort={toggleSort}>
-        <SelectAllRow selection={selection} colSpan={2 + shownKeys.length} />
-        {rows.map((row) => {
+        <SelectAllRow
+          selection={selection}
+          colSpan={2 + shownKeys.length}
+          pageIds={pagination.pageRows.map((row) => row.id)}
+        />
+        {pagination.pageRows.map((row) => {
           const discounted = isDiscounted(row);
           const percent = discountPercentOf(row);
           const status = offerStatus(row);
@@ -590,6 +613,7 @@ export function ProductsAdmin() {
           );
         })}
       </AdminTable>
+      <AdminPagination pagination={pagination} label="Product pages" />
 
       {bulk.modal}
       {discountOpen ? (

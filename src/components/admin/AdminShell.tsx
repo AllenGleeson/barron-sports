@@ -6,13 +6,16 @@ import { signOutAdmin, useAdminAuth } from "@/lib/admin/auth";
 import { adminButton } from "@/components/admin/fields";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
+/** Shows Payments in the admin menu. The page still works at /admin/payments when false. */
+const SHOW_PAYMENTS = false;
+
 const nav = [
   { href: "/admin/", label: "Overview" },
   { href: "/admin/services/", label: "Services" },
   { href: "/admin/products/", label: "Products" },
   { href: "/admin/brands/", label: "Brands" },
   { href: "/admin/users/", label: "Users" },
-  { href: "/admin/payments/", label: "Payments" },
+  ...(SHOW_PAYMENTS ? [{ href: "/admin/payments/", label: "Payments" }] : []),
 ];
 
 function isActive(pathname: string, href: string) {

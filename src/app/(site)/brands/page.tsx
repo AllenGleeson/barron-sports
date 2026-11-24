@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { BrandLogo } from "@/components/cards/BrandLogo";
+import { BrandSections } from "@/components/brands/BrandSections";
 import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { brands, pageImages } from "@/lib/site";
+import { catalogueBrandNames, pageImages, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Brands",
@@ -23,18 +23,18 @@ export default function BrandsPage() {
       />
       <section className="bg-ink py-8 lg:py-10">
         <Container>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {brands.map((brand) => (
-              <li key={brand.name}>
-                <BrandLogo brand={brand} />
-              </li>
-            ))}
-          </ul>
-          <div className="mt-8">
-            <Button href="/contact-us" variant="ghost">
-              Ask about a brand
-            </Button>
-          </div>
+          <BrandSections productBrandNames={catalogueBrandNames()} />
+          {SHOW_CONTACT_PAGE ? (
+            <div className="mt-10">
+              <Button href="/contact-us" variant="ghost">
+                Ask about a brand
+              </Button>
+            </div>
+          ) : (
+            <p className="mt-10 text-base text-parchment">
+              Looking for a brand? Call us on {site.phone.display}.
+            </p>
+          )}
         </Container>
       </section>
     </>

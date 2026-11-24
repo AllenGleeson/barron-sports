@@ -5,7 +5,7 @@ import { CoverImage } from "@/components/media/CoverImage";
 import { AccordionItem, AccordionList } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { firearmsCourse, site } from "@/lib/site";
+import { firearmsCourse, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export const metadata: Metadata = {
@@ -98,9 +98,11 @@ export default function CoursePage() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Button href="/course/dashboard">{firearmsCourse.cta}</Button>
-                <Button href="/contact-us" variant="ghost">
-                  Ask about the course
-                </Button>
+                {SHOW_CONTACT_PAGE ? (
+                  <Button href="/contact-us" variant="ghost">
+                    Ask about the course
+                  </Button>
+                ) : null}
               </div>
             </div>
           </article>

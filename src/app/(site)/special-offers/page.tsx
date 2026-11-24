@@ -3,7 +3,7 @@ import { SpecialOffersGrid } from "@/components/offers/SpecialOffersGrid";
 import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { pageImages, SPECIAL_OFFERS } from "@/lib/site";
+import { pageImages, SHOW_CONTACT_PAGE, site, SPECIAL_OFFERS } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Special Offers",
@@ -24,9 +24,15 @@ export default function SpecialOffersPage() {
         <Container>
           <SpecialOffersGrid offers={SPECIAL_OFFERS} />
           <div className="mt-12 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href="/contact-us" variant="secondary">
-              Enquire about an offer
-            </Button>
+            {SHOW_CONTACT_PAGE ? (
+              <Button href="/contact-us" variant="secondary">
+                Enquire about an offer
+              </Button>
+            ) : (
+              <Button href={site.phone.href} variant="secondary">
+                Call {site.phone.display}
+              </Button>
+            )}
             <Button href="/products" variant="ghost">
               All products
             </Button>

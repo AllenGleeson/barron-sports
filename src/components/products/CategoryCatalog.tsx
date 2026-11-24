@@ -8,6 +8,7 @@ import {
   type CategoryCatalogContent,
   type CategoryCatalogFeatured,
   type CategoryCatalogHighlight,
+  SHOW_CONTACT_PAGE,
 } from "@/lib/site";
 
 function HighlightCard({ item }: { item: CategoryCatalogHighlight }) {
@@ -157,7 +158,7 @@ function FeaturedStackCard({
 function CatalogCta() {
   return (
     <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-      <Button href="/contact-us">Ask about availability</Button>
+      {SHOW_CONTACT_PAGE ? <Button href="/contact-us">Ask about availability</Button> : null}
       <Button href={site.phone.href} variant="secondary">
         Call {site.phone.display}
       </Button>

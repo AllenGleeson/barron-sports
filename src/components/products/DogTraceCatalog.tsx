@@ -4,7 +4,7 @@ import { CoverImage } from "@/components/media/CoverImage";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { dogTraceCatalog, site } from "@/lib/site";
+import { dogTraceCatalog, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
 function SpecList({ title, items }: { title: string; items: readonly string[] }) {
@@ -184,7 +184,7 @@ export function DogTraceCatalog() {
             })}
           </div>
           <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-            <Button href="/contact-us">Ask about availability</Button>
+            {SHOW_CONTACT_PAGE ? <Button href="/contact-us">Ask about availability</Button> : null}
             <Button href={site.phone.href} variant="secondary">
               Call {site.phone.display}
             </Button>

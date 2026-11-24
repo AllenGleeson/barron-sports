@@ -202,10 +202,10 @@ export const accessoriesCatalog: CategoryCatalogContent = {
     {
       id: "sights",
       name: "Sights",
-      summary: "Full line of Vortex sights at unbeatable prices.",
+      summary: "Riflescopes and optics for hunting and target shooting, at competitive prices.",
       image: {
         src: "/catalogues/accessories/sights.webp",
-        alt: "Vortex riflescope",
+        alt: "Riflescope",
       },
     },
     {
