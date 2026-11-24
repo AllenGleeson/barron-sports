@@ -87,6 +87,7 @@ Admin content lives in **Supabase**. The browser talks to Supabase directly, and
 
 - `page.tsx` files are thin Server Components. They export `metadata` (or `generateMetadata`) with a `title` and a `description`, then render a client component when interactivity is needed (e.g. `admin/products/page.tsx` → `<ProductsAdmin />`, `course/learn/page.tsx` → `<EnrolmentGate />`).
 - Page titles use the root template (`%s | Barron Sports`), so set only the page name.
+- Public pages build their metadata with `pageMetadata({ title, description, path })` from `src/lib/seo.ts`, which sets the canonical URL and social card (`path` ends in `/`). Add new public pages to `src/app/sitemap.ts`. The live domain is `site.url` (www.barronsports.ie); `next.config.ts` redirects the old BaseKit URLs (`/products1/...`, `/services`, `/gallery`), so don't remove those.
 - Interior pages start with `PageHero` (eyebrow, title, description, image, optional `actions`), then `<section className="bg-ink py-…"><Container>…</Container></section>`.
 - Use `Button` for links styled as buttons (handles `tel:`, `mailto:`, and external links). Use `CoverImage` for images (wraps `next/image`). Plain `<img>` is only for admin previews.
 - Give sections a heading id and `aria-labelledby`.

@@ -25,6 +25,10 @@ export type Category = {
   menuDescription: string;
   shortDescription: string;
   description: string;
+  /** Search result title, when it should say more than `name` (the site name is added after). */
+  seoTitle?: string;
+  /** Search result description, when it should differ from `description`. */
+  seoDescription?: string;
   image: { src: string; alt: string };
 };
 
@@ -45,6 +49,9 @@ export const categories: Category[] = (
     {
       slug: "dogtrace",
       name: "DogTrace",
+      seoTitle: "DogTrace GPS Dog Trackers & Training Collars",
+      seoDescription:
+        "DogTrace GPS dog tracking collars (X20, X25, X30) and training systems from Barron Sports, Ennis, Co. Clare. Protective armour fitted free and in-house repairs.",
       menuDescription: "GPS tracking and training collars",
       shortDescription: "GPS dog tracking and training systems, fitted in-house.",
       description:

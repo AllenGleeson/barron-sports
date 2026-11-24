@@ -13,7 +13,7 @@ export function ServicesPreview() {
   if (fromStore !== null && rows.length === 0) return null;
 
   return (
-    <section className="bg-ink pb-8 pt-4 lg:pb-10 lg:pt-6" aria-labelledby="services-heading">
+    <section id="services" className="bg-ink pb-8 pt-4 lg:pb-10 lg:pt-6" aria-labelledby="services-heading">
       <Container>
         <h2
           id="services-heading"

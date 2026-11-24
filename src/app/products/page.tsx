@@ -3,13 +3,15 @@ import { FeaturedCollectionCard } from "@/components/cards/FeaturedCollectionCar
 import { PageHero } from "@/components/interior/PageHero";
 import { ProductSearch } from "@/components/products/ProductSearch";
 import { Container } from "@/components/ui/Container";
+import { pageMetadata } from "@/lib/seo";
 import { categories, getAllProducts, pageImages } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Products",
   description:
     "Rifles, shotguns, DogTrace systems, night vision, flashlights and accessories from Barron Sports in Ennis.",
-};
+  path: "/products/",
+});
 
 export default function ProductsIndexPage() {
   const products = getAllProducts();

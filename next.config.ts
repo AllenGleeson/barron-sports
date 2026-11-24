@@ -6,6 +6,16 @@ const nextConfig: NextConfig = {
     return [
       // The old enrolment preview; enrolment now starts from the course dashboard.
       { source: "/course/enrol", destination: "/course/dashboard/", permanent: false },
+      // Addresses from the old BaseKit site (www.barronsports.ie), so search
+      // rankings and bookmarks carry over. Permanent (308) redirects.
+      { source: "/products1/index", destination: "/products/", permanent: true },
+      { source: "/products1/pulsar-axion-xm30f", destination: "/products/night-vision-optics/", permanent: true },
+      { source: "/products1/infiray-tube-td50l", destination: "/products/night-vision-optics/", permanent: true },
+      { source: "/products1/pixfra", destination: "/products/night-vision-optics/", permanent: true },
+      { source: "/products1/:slug", destination: "/products/:slug/", permanent: true },
+      { source: "/services", destination: "/#services", permanent: true },
+      { source: "/gallery", destination: "/about/", permanent: true },
+      { source: "/confirmation", destination: "/", permanent: true },
     ];
   },
   images: {

@@ -3,13 +3,15 @@ import { SpecialOffersGrid } from "@/components/offers/SpecialOffersGrid";
 import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { pageMetadata } from "@/lib/seo";
 import { pageImages, SHOW_CONTACT_PAGE, site, SPECIAL_OFFERS } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Special Offers",
   description:
     "Current special offers on rifles, optics, clay traps, DogTrace systems and thermal equipment from Barron Sports in Ennis.",
-};
+  path: "/special-offers/",
+});
 
 export default function SpecialOffersPage() {
   return (

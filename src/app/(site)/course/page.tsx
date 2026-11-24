@@ -5,14 +5,16 @@ import { CoverImage } from "@/components/media/CoverImage";
 import { AccordionItem, AccordionList } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { pageMetadata } from "@/lib/seo";
 import { firearmsCourse, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Firearms Safety Course",
   description:
     "Firearms safety course information and practical guidance on Form FCA1 firearm certificate applications from Barron Sports in Ennis, Co. Clare.",
-};
+  path: "/course/",
+});
 
 export default function CoursePage() {
   return (

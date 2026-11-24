@@ -3,13 +3,15 @@ import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CoverImage } from "@/components/media/CoverImage";
+import { pageMetadata } from "@/lib/seo";
 import { pageImages, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "About",
   description:
     "Barron Sports is a specialist shooting and hunting retailer in Newpark, Ennis, Co. Clare, supplying quality equipment and in-house service.",
-};
+  path: "/about/",
+});
 
 export default function AboutPage() {
   return (

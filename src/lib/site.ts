@@ -15,6 +15,8 @@ export * from "@/lib/content/catalogues";
 
 export const site = {
   name: "Barron Sports",
+  /** The live address (canonical URLs, sitemap, social cards). The old site used www too. */
+  url: "https://www.barronsports.ie",
   tagline: "For All Your Shooting Needs",
   description:
     "Specialist sporting and outdoor equipment retailer in Ennis, Co. Clare. Quality firearms, optics, DogTrace systems, accessories and trusted brands.",

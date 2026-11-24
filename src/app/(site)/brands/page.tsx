@@ -3,13 +3,15 @@ import { BrandSections } from "@/components/brands/BrandSections";
 import { PageHero } from "@/components/interior/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { pageMetadata } from "@/lib/seo";
 import { catalogueBrandNames, pageImages, SHOW_CONTACT_PAGE, site } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Brands",
   description:
     "Firearms, optics and field brands stocked by Barron Sports in Ennis, including Browning, Beretta, Tikka, Zeiss, DogTrace and Lithgow Arms.",
-};
+  path: "/brands/",
+});
 
 export default function BrandsPage() {
   return (

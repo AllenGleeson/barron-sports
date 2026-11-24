@@ -7,6 +7,7 @@ import { DogTraceCatalog } from "@/components/products/DogTraceCatalog";
 import { ProductSearch } from "@/components/products/ProductSearch";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { pageMetadata } from "@/lib/seo";
 import {
   categories,
   categoryCatalogs,
@@ -32,10 +33,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const category = getCategory(slug);
   if (!category) return { title: "Products" };
-  return {
-    title: category.name,
-    description: category.description,
-  };
+  return pageMetadata({
+    title: category.seoTitle ?? category.name,
+    description: category.seoDescription ?? category.description,
+    path: `${category.href}/`,
+    image: category.image.src,
+  });
 }
 
 export default async function CategoryPage({ params }: PageProps) {

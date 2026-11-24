@@ -2,17 +2,19 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { PageHero } from "@/components/interior/PageHero";
 import { Container } from "@/components/ui/Container";
+import { pageMetadata } from "@/lib/seo";
 import { pageImages, site } from "@/lib/site";
 
 const mapsQuery = encodeURIComponent(site.address.full);
 const mapsHref = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
 const mapsEmbedSrc = `https://maps.google.com/maps?q=${mapsQuery}&z=16&hl=en&output=embed`;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Contact Us",
   description:
     "Contact Barron Sports in Newpark, Ennis, Co. Clare. Phone, email, address and opening hours.",
-};
+  path: "/contact-us/",
+});
 
 export default function ContactPage() {
   return (
