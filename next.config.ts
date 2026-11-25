@@ -1,13 +1,24 @@
 import type { NextConfig } from "next";
+import { SHOW_CONTACT_PAGE, SHOW_COURSE } from "./src/lib/features";
 
 const nextConfig: NextConfig = {
   trailingSlash: true,
   async redirects() {
     return [
+      // Hidden features send visitors to the home page. Temporary (307), so
+      // browsers and Google don't remember it once the page goes live.
+      ...(SHOW_CONTACT_PAGE ? [] : [{ source: "/contact-us", destination: "/", permanent: false }]),
+      ...(SHOW_COURSE
+        ? []
+        : [
+            { source: "/course", destination: "/", permanent: false },
+            { source: "/course/:path*", destination: "/", permanent: false },
+          ]),
       // The old enrolment preview; enrolment now starts from the course dashboard.
       { source: "/course/enrol", destination: "/course/dashboard/", permanent: false },
       // Addresses from the old BaseKit site (www.barronsports.ie), so search
       // rankings and bookmarks carry over. Permanent (308) redirects.
+      { source: "/products1", destination: "/products/", permanent: true },
       { source: "/products1/index", destination: "/products/", permanent: true },
       { source: "/products1/pulsar-axion-xm30f", destination: "/products/night-vision-optics/", permanent: true },
       { source: "/products1/infiray-tube-td50l", destination: "/products/night-vision-optics/", permanent: true },

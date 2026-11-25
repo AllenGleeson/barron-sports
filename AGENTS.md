@@ -32,7 +32,7 @@ Website for Barron Sports, a shooting and outdoor equipment shop in Ennis, Co. C
 
 ## Layout
 
-- `src/app/(site)/` — public pages (home, about, brands, contact-us, special-offers, course). Wrapped in `SiteChrome` (header/footer).
+- `src/app/(site)/` — public pages (home, about, brands, contact-us, special-offers; the course lives in `_course`, switched off). Wrapped in `SiteChrome` (header/footer).
 - `src/app/products/` — category listing and `products/[slug]` category pages (own layout, also uses `SiteChrome`).
 - `src/app/admin/` — admin area (products, services, brands, users, payments), wrapped in `AdminApp`, `noindex`. Special offers and packages are managed on the products page (`?view=offers` / `?view=packages`). Users lists the real Supabase Auth accounts (Students and Admins, by `app_metadata.role`) with their course access, payments and lesson progress (`UserCourse.tsx`), through the admin-only routes in `src/app/api/admin/users/` (`src/lib/admin/usersServer.ts` checks the caller is an admin and enforces: super admins only changeable by a super admin, never remove the last active admin, no removing your own access). Record emails there are still a preview. Payments lists every `course_payments` row with totals and a CSV export; in-shop and free payments are recorded from the student's page.
 - `src/components/` — grouped by area: `admin`, `home`, `products`, `course`, `cards`, `layout`, `ui`, etc.
@@ -126,4 +126,5 @@ Admin content lives in **Supabase**. The browser talks to Supabase directly, and
 - Firearm categories (`rifles`, `shotguns`) are special-cased only through `isFirearmCategory` / `FIREARM_CATEGORY_SLUGS` (list layout, no product images).
 - Catalogue products have no ids, so offers are matched to products by title: always compare with `sameTitle()`. Offer category labels map to categories through `OFFER_CATEGORY_SLUGS`. 
 - Page photos that don't belong to a category, offer or course entry live in `pageImages`. Don't inline image URLs in components.
+- Unfinished features are hidden with the switches in `src/lib/features.ts` (`SHOW_COURSE`, `SHOW_CONTACT_PAGE`; import them from `@/lib/site`). While a switch is off, its links are hidden and `next.config.ts` redirects its pages to the home page (temporary 307). Keep that file import-free: `next.config.ts` reads it. The course pages are also switched off by their folder name, `src/app/(site)/_course` (private folders aren't routed); to launch the course, rename it to `course` and set `SHOW_COURSE = true`.
 - Course features that aren't built yet say so in the copy ("Preview", "Placeholder film"). Keep that wording until the real feature ships. Use `COURSE_PASS_PERCENT` and `courseEnrolmentOffer` rather than writing the pass mark or price into copy.

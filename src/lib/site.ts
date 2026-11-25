@@ -74,19 +74,11 @@ export const pageImages = {
   },
 } as const;
 
-/**
- * Shows the firearms safety course in the nav, footer and home page.
- * The course pages still exist at /course when this is false.
- */
-export const SHOW_COURSE = false;
+import { SHOW_CONTACT_PAGE, SHOW_COURSE } from "@/lib/features";
+
+export { SHOW_CONTACT_PAGE, SHOW_COURSE };
 
 const COURSE_NAV_ITEM = { label: "Course", href: "/course" };
-
-/**
- * Shows the contact page in the nav and the "Contact" / "Ask about…" buttons.
- * Off until the contact form can send email; the page still exists at /contact-us.
- */
-export const SHOW_CONTACT_PAGE = false;
 
 export const footerNav = [
   { label: "Home", href: "/" },
